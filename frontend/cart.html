@@ -10,9 +10,229 @@
   <link rel="stylesheet" href="css/style.css">
   <script>
     if (!sessionStorage.getItem('userName')) {
-      window.location.href = 'login.html';
+      window.location.href = 'login.html?redirect=cart.html';
     }
   </script>
+  <style>
+    /* Payment & Order Confirmation Modal */
+    .payment-modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.65);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      z-index: 2000;
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+      transition: opacity 0.25s ease;
+    }
+    .payment-sheet {
+      background: #FFFFFF;
+      width: 100%;
+      max-width: 480px;
+      border-radius: 24px 24px 0 0;
+      padding: 16px 20px 28px;
+      box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.25);
+      animation: sheetSlideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    @keyframes sheetSlideUp {
+      from { transform: translateY(100%); }
+      to { transform: translateY(0); }
+    }
+    .sheet-handle {
+      width: 44px;
+      height: 4px;
+      background: #E5E7EB;
+      border-radius: 2px;
+      margin: 0 auto 14px;
+    }
+    .sheet-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+    .payment-shield-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 12px;
+      background: rgba(16, 185, 129, 0.12);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .sheet-close-btn {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: #F3F4F6;
+      color: #6B7280;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .sheet-amount-card {
+      background: linear-gradient(135deg, #111827, #1F2937);
+      color: #FFFFFF;
+      border-radius: 16px;
+      padding: 16px 18px;
+      margin-bottom: 16px;
+    }
+    .amount-label {
+      font-size: 12px;
+      color: #9CA3AF;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .amount-val {
+      font-size: 26px;
+      font-weight: 800;
+      color: #10B981;
+    }
+    .amount-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(16, 185, 129, 0.2);
+      color: #34D399;
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 600;
+      margin-top: 8px;
+    }
+    .payment-methods-group {
+      margin-bottom: 14px;
+    }
+    .method-title {
+      font-size: 13px;
+      font-weight: 700;
+      color: #374151;
+      margin-bottom: 8px;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+    }
+    .payment-method-card {
+      border: 1.5px solid #E5E7EB;
+      border-radius: 14px;
+      padding: 12px 14px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 10px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .payment-method-card.active {
+      border-color: #10B981;
+      background: rgba(16, 185, 129, 0.04);
+    }
+    .method-icon-box {
+      width: 38px;
+      height: 38px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .method-info {
+      flex: 1;
+    }
+    .method-name {
+      font-size: 14px;
+      font-weight: 700;
+      color: #111827;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .upi-tag {
+      font-size: 10px;
+      font-weight: 700;
+      background: #D1FAE5;
+      color: #065F46;
+      padding: 2px 7px;
+      border-radius: 10px;
+    }
+    .method-desc {
+      font-size: 11px;
+      color: #6B7280;
+      margin-top: 2px;
+    }
+    .radio-check-indicator {
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      border: 2px solid #D1D5DB;
+      position: relative;
+    }
+    .radio-check-indicator.checked {
+      border-color: #10B981;
+      background: #10B981;
+    }
+    .radio-check-indicator.checked::after {
+      content: '';
+      position: absolute;
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: #FFFFFF;
+      top: 4px;
+      left: 4px;
+    }
+    .payment-security-note {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 11px;
+      color: #6B7280;
+      background: #F9FAFB;
+      padding: 8px 12px;
+      border-radius: 10px;
+      margin-bottom: 16px;
+      line-height: 1.35;
+    }
+    .pay-submit-btn {
+      width: 100%;
+      background: linear-gradient(135deg, #10B981, #059669);
+      color: #FFFFFF;
+      border-radius: 14px;
+      padding: 15px;
+      font-size: 15px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      box-shadow: 0 4px 14px rgba(16, 185, 129, 0.35);
+      transition: opacity 0.2s ease, transform 0.1s ease;
+      cursor: pointer;
+    }
+    .pay-submit-btn:active {
+      transform: scale(0.99);
+    }
+    .pay-submit-btn:disabled {
+      opacity: 0.7;
+      cursor: not-allowed;
+    }
+    .btn-spinner {
+      width: 16px;
+      height: 16px;
+      border: 2.5px solid rgba(255, 255, 255, 0.3);
+      border-top-color: #FFFFFF;
+      border-radius: 50%;
+      animation: spin 0.6s linear infinite;
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+  </style>
 </head>
 <body>
   <div class="container">
@@ -47,7 +267,7 @@
       <span class="total-label">Total</span>
       <span class="total-val" id="footer-total">₹0</span>
     </div>
-    <button class="primary-btn" onclick="checkout()">Proceed to Order</button>
+    <button class="primary-btn" id="proceed-btn" onclick="checkout()">Proceed to Order</button>
   </div>
 
   <nav class="bottom-nav">
@@ -70,10 +290,207 @@
     </a>
   </nav>
 
+  <!-- Payment & Order Confirmation Modal -->
+  <div class="payment-modal-backdrop" id="payment-modal-backdrop" style="display: none;" onclick="closePaymentModal(event)">
+    <div class="payment-sheet" id="payment-sheet" onclick="event.stopPropagation()">
+      <div class="sheet-handle"></div>
+      
+      <div class="sheet-header">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <div class="payment-shield-icon">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+              <path d="m9 12 2 2 4-4"/>
+            </svg>
+          </div>
+          <div>
+            <h3 style="margin: 0; font-size: 17px; font-weight: 700; color: #111827;">Confirm Order & Payment</h3>
+            <p style="margin: 2px 0 0 0; font-size: 12px; color: #6B7280;">Safe & Instant Checkout</p>
+          </div>
+        </div>
+        <button type="button" class="sheet-close-btn" onclick="closePaymentModal()">✕</button>
+      </div>
+
+      <!-- Amount Breakdown Card -->
+      <div class="sheet-amount-card">
+        <div style="display: flex; justify-content: space-between; align-items: baseline;">
+          <span class="amount-label">Payable Total</span>
+          <span class="amount-val" id="modal-pay-amount">₹0</span>
+        </div>
+        <div class="amount-badge">
+          <span>⚡</span> UPI Gateway: Test Mode (Auto-Verified)
+        </div>
+      </div>
+
+      <!-- Payment Mode Options -->
+      <div class="payment-methods-group">
+        <div class="method-title">Payment Method</div>
+        
+        <!-- Option 1: UPI -->
+        <label class="payment-method-card active" id="card-method-upi" onclick="selectPaymentMethod('UPI')">
+          <input type="radio" name="pay_mode" value="UPI" checked style="display: none;">
+          <div class="method-icon-box" style="background: rgba(16, 185, 129, 0.12); color: #10B981;">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="m9 12 2 2 4-4"/></svg>
+          </div>
+          <div class="method-info">
+            <div class="method-name">
+              UPI / QR / Instant Pay
+              <span class="upi-tag">Auto-Verified</span>
+            </div>
+            <div class="method-desc">GPay, PhonePe, Paytm, BHIM</div>
+          </div>
+          <div class="radio-check-indicator checked" id="indicator-upi"></div>
+        </label>
+
+        <!-- Option 2: Cash -->
+        <label class="payment-method-card" id="card-method-cash" onclick="selectPaymentMethod('CASH')">
+          <input type="radio" name="pay_mode" value="CASH" style="display: none;">
+          <div class="method-icon-box" style="background: rgba(245, 158, 11, 0.12); color: #F59E0B;">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="20" height="12" x="2" y="6" rx="2"/><circle cx="12" cy="12" r="2"/></svg>
+          </div>
+          <div class="method-info">
+            <div class="method-name">Pay at Counter (Cash)</div>
+            <div class="method-desc">Pay cash when collecting your food token</div>
+          </div>
+          <div class="radio-check-indicator" id="indicator-cash"></div>
+        </label>
+      </div>
+
+      <!-- Architecture Sandbox Notice -->
+      <div class="payment-security-note">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#6B7280" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+        <span>UPI Gateway bypass active. Order will verify instantly without redirecting to a broken page.</span>
+      </div>
+
+      <!-- Action Button -->
+      <button class="pay-submit-btn" id="pay-submit-btn" onclick="executeOrderPayment()">
+        <span id="pay-btn-spinner" class="btn-spinner" style="display: none;"></span>
+        <span id="pay-btn-label">Pay & Place Order</span>
+      </button>
+    </div>
+  </div>
+
   <script src="js/api.js"></script>
   <script src="js/app.js"></script>
+  <script src="js/payment.js"></script>
   <script>
     let currentTotal = 0;
+    let selectedPaymentMethod = 'UPI';
+
+    function selectPaymentMethod(mode) {
+      selectedPaymentMethod = mode;
+      const upiCard = document.getElementById('card-method-upi');
+      const cashCard = document.getElementById('card-method-cash');
+      const upiInd = document.getElementById('indicator-upi');
+      const cashInd = document.getElementById('indicator-cash');
+
+      if (upiCard) upiCard.classList.toggle('active', mode === 'UPI');
+      if (cashCard) cashCard.classList.toggle('active', mode === 'CASH');
+      if (upiInd) upiInd.classList.toggle('checked', mode === 'UPI');
+      if (cashInd) cashInd.classList.toggle('checked', mode === 'CASH');
+
+      const btnLabel = document.getElementById('pay-btn-label');
+      if (btnLabel) {
+        btnLabel.innerText = mode === 'UPI' 
+          ? `Pay ₹${currentTotal} & Place Order` 
+          : `Confirm Order (Pay ₹${currentTotal} at Counter)`;
+      }
+    }
+
+    function openPaymentModal() {
+      const cartObj = getCartItems();
+      const ids = Object.keys(cartObj);
+      if (ids.length === 0) return;
+
+      const modal = document.getElementById('payment-modal-backdrop');
+      const amountEl = document.getElementById('modal-pay-amount');
+      const btnLabel = document.getElementById('pay-btn-label');
+      const submitBtn = document.getElementById('pay-submit-btn');
+      const spinner = document.getElementById('pay-btn-spinner');
+
+      if (amountEl) amountEl.innerText = `₹${currentTotal}`;
+      if (btnLabel) {
+        btnLabel.innerText = selectedPaymentMethod === 'UPI' 
+          ? `Pay ₹${currentTotal} & Place Order` 
+          : `Confirm Order (Pay ₹${currentTotal} at Counter)`;
+      }
+      if (submitBtn) submitBtn.disabled = false;
+      if (spinner) spinner.style.display = 'none';
+
+      if (modal) {
+        modal.style.display = 'flex';
+      }
+    }
+
+    function closePaymentModal(event) {
+      if (event && event.target && event.target.id !== 'payment-modal-backdrop' && !event.target.classList.contains('sheet-close-btn')) {
+        return;
+      }
+      const modal = document.getElementById('payment-modal-backdrop');
+      if (modal) modal.style.display = 'none';
+    }
+
+    async function executeOrderPayment() {
+      const cartObj = getCartItems();
+      const ids = Object.keys(cartObj);
+      if (ids.length === 0) return;
+
+      const submitBtn = document.getElementById('pay-submit-btn');
+      const spinner = document.getElementById('pay-btn-spinner');
+      const label = document.getElementById('pay-btn-label');
+
+      if (submitBtn) submitBtn.disabled = true;
+      if (spinner) spinner.style.display = 'inline-block';
+
+      const menuItems = await getMenu();
+      const itemsArr = ids.map(id => {
+        const item = menuItems.find(m => m.id == id);
+        return {
+          id: Number(id),
+          quantity: cartObj[id],
+          price: item ? item.price : 0,
+          name: item ? item.name : 'Food Item'
+        };
+      });
+
+      const orderPayload = {
+        amount: currentTotal,
+        items: itemsArr,
+        paymentMethod: selectedPaymentMethod,
+        customerId: sessionStorage.getItem('userName') || 'Guest'
+      };
+
+      await PaymentGateway.processOrder(orderPayload, {
+        onStep: (step, msg) => {
+          if (label) label.innerText = msg;
+        },
+        onSuccess: (order) => {
+          if (label) label.innerText = 'Payment Confirmed! ✅';
+          trackOrderHistory(order.id, itemsArr);
+          clearCart();
+          setTimeout(() => {
+            window.location.href = `orders.html?id=${order.id}`;
+          }, 350);
+        },
+        onError: (err) => {
+          alert('Order issue: ' + (err.message || 'Please try again'));
+          if (submitBtn) submitBtn.disabled = false;
+          if (spinner) spinner.style.display = 'none';
+          if (label) label.innerText = `Pay ₹${currentTotal} & Place Order`;
+        }
+      });
+    }
+
+    // Checkout trigger button
+    function checkout() {
+      const cartObj = getCartItems();
+      const ids = Object.keys(cartObj);
+      if (ids.length === 0) {
+        alert('Your cart is empty. Please add delicious food first!');
+        return;
+      }
+      openPaymentModal();
+    }
     
     async function renderCart() {
       const menuItems = await getMenu();
@@ -117,12 +534,12 @@
         const itemTotal = item.price * qty;
         subtotal += itemTotal;
         
-        const imgUrl = item.image_url.startsWith('http') ? item.image_url : `${item.image_url}`;
+        const imgUrl = item.image_url ? (item.image_url.startsWith('http') ? item.image_url : `${item.image_url}`) : '/assets/food/cheese_corn_pizza.jpg';
         const card = document.createElement('div');
         card.className = 'list-card';
         card.innerHTML = `
           <div class="img-container">
-            <img src="${imgUrl}" alt="${item.name}">
+            <img src="${imgUrl}" alt="${item.name}" onerror="this.onerror=null;this.src='/assets/food/cheese_corn_pizza.jpg';">
           </div>
           <div class="info">
             <h3>${item.name}</h3>
@@ -158,31 +575,6 @@
       document.getElementById('footer-total').innerText = `₹${total}`;
     }
     
-    async function checkout() {
-      const cartObj = getCartItems();
-      const ids = Object.keys(cartObj);
-      if (ids.length === 0) return;
-      
-      const menuItems = await getMenu();
-      const itemsArr = ids.map(id => {
-        const item = menuItems.find(m => m.id == id);
-        return { 
-          id: id, 
-          quantity: cartObj[id],
-          price: item ? item.price : 0
-        };
-      });
-      
-      const order = await placeOrder(itemsArr, currentTotal);
-      if (order) {
-        trackOrderHistory(order.id, itemsArr);
-        clearCart();
-        window.location.href = `orders.html?id=${order.id}`;
-      } else {
-        alert('Failed to place order');
-      }
-    }
-    
     document.addEventListener('DOMContentLoaded', () => {
       renderCart();
       try {
@@ -199,5 +591,7 @@
     });
     document.addEventListener('cartUpdated', renderCart);
   </script>
-<script src="https://cdn.socket.io/4.7.4/socket.io.min.js"></script><script src="js/theme.js"></script></body>
+  <script src="https://cdn.socket.io/4.7.4/socket.io.min.js"></script>
+  <script src="js/theme.js"></script>
+</body>
 </html>

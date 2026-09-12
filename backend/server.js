@@ -419,7 +419,7 @@ app.post('/api/orders', (req, res) => {
 
 async function handleCreateOrder(req, res) {
   try {
-    const { items, total } = req.body;
+    const { items, total, payment } = req.body;
     if (!items || items.length === 0) return res.status(400).json({ error: 'No items' });
 
     const orderId = `ORD${Date.now().toString().slice(-6)}`;
@@ -432,7 +432,10 @@ async function handleCreateOrder(req, res) {
       total,
       placed_at: new Date().toISOString(),
       est_ready_in: peopleAhead === 0 ? 5 : peopleAhead * 3,
-      people_ahead: peopleAhead
+      people_ahead: peopleAhead,
+      payment_status: (payment && payment.status) || 'PAID',
+      payment_method: (payment && payment.method) || 'UPI',
+      transaction_id: (payment && payment.transactionId) || `TXN_${Date.now()}`
     };
 
     await db.createOrder(newOrderData, items);
@@ -448,6 +451,9 @@ async function handleCreateOrder(req, res) {
       placedAt: newOrderData.placed_at,
       estReadyIn: newOrderData.est_ready_in,
       peopleAhead: newOrderData.people_ahead,
+      paymentStatus: newOrderData.payment_status,
+      paymentMethod: newOrderData.payment_method,
+      transactionId: newOrderData.transaction_id,
       items
     });
   } catch (err) {
@@ -455,6 +461,30 @@ async function handleCreateOrder(req, res) {
     return res.status(500).json({ error: err.message });
   }
 }
+
+// Payment Gateway Architecture Endpoints
+app.post('/api/payments/create-order', (req, res) => {
+  const { amount, currency = 'INR', customerId } = req.body;
+  const paymentOrderId = `pay_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+  res.json({
+    success: true,
+    paymentOrderId,
+    amount,
+    currency,
+    keyId: process.env.PAYMENT_GATEWAY_KEY || 'sandbox_key',
+    bypassActive: true
+  });
+});
+
+app.post('/api/payments/verify', (req, res) => {
+  const { transactionId, paymentOrderId, signature } = req.body;
+  res.json({
+    success: true,
+    verified: true,
+    status: 'PAID',
+    transactionId: transactionId || `TXN_${Date.now()}`
+  });
+});
 
 app.get('/api/orders/:id', async (req, res) => {
   try {
@@ -468,7 +498,10 @@ app.get('/api/orders/:id', async (req, res) => {
       placedAt: localOrder.placed_at,
       estReadyIn: localOrder.est_ready_in,
       peopleAhead: localOrder.people_ahead,
-      items: localOrder.items
+      paymentStatus: localOrder.payment_status || 'PAID',
+      paymentMethod: localOrder.payment_method || 'UPI',
+      transactionId: localOrder.transaction_id || null,
+      items: localOrder.items || []
     });
   } catch (err) {
     res.status(500).json({ error: err.message });

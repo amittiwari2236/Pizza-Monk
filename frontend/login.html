@@ -710,7 +710,8 @@
           if (data.role === 'admin') {
             window.location.href = 'admin.html';
           } else {
-            window.location.href = 'index.html';
+            const redirectTarget = new URLSearchParams(window.location.search).get('redirect') || 'index.html';
+            window.location.href = redirectTarget;
           }
         } else {
           alertText.innerText = data.error || 'Invalid credentials. Please try again.';

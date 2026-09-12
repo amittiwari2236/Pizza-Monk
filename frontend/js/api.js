@@ -12,14 +12,17 @@ async function getMenu() {
   }
 }
 
-async function placeOrder(items, total) {
+async function placeOrder(items, total, paymentInfo = {}) {
   try {
     const res = await fetch(`${API_BASE}/orders`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ items, total })
+      body: JSON.stringify({ items, total, payment: paymentInfo })
     });
-    if (!res.ok) throw new Error(`HTTP error ${res.status}`);
+    if (!res.ok) {
+      const errData = await res.json().catch(() => ({}));
+      throw new Error(errData.error || `HTTP error ${res.status}`);
+    }
     return await res.json();
   } catch (err) {
     console.error('Error placing order:', err);
