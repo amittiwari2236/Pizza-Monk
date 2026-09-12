@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Smart Canteen - Cart</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+  <script>
+    if (!sessionStorage.getItem('userName')) {
+      window.location.href = 'login.html';
+    }
+  </script>
+</head>
+<body>
+  <div class="container">
+    <div class="cart-header">
+      <h1>Your Cart</h1>
+      <p id="cart-item-count">0 items ready to order</p>
+    </div>
+
+    <div id="cart-items-container">
+      <!-- Injected via JS -->
+    </div>
+
+    <div class="bill-summary" id="bill-summary" style="display: none;">
+      <h3>Bill Summary</h3>
+      <div class="bill-row">
+        <span>Subtotal</span>
+        <span id="subtotal">₹0</span>
+      </div>
+      <div class="bill-row">
+        <span>GST (5%)</span>
+        <span id="gst">₹0</span>
+      </div>
+      <div class="bill-row total">
+        <span>Total</span>
+        <span id="total">₹0</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="sticky-footer" id="sticky-footer" style="display: none;">
+    <div class="total-col">
+      <span class="total-label">Total</span>
+      <span class="total-val" id="footer-total">₹0</span>
+    </div>
+    <button class="primary-btn" onclick="checkout()">Proceed to Order</button>
+  </div>
+
+  <nav class="bottom-nav">
+    <a href="index.html" class="nav-item">
+      <svg viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
+      Home
+    </a>
+    <a href="menu.html" class="nav-item">
+      <svg viewBox="0 0 24 24"><path d="M8.1 13.34l2.83-2.83L3.91 3.5c-1.56 1.56-1.56 4.09 0 5.66l4.19 4.18zm6.78-1.81c1.53.71 3.68.21 5.27-1.38 1.91-1.91 2.28-4.65.81-6.12-1.46-1.46-4.2-1.1-6.12.81-1.59 1.59-2.09 3.74-1.38 5.27L3.7 19.87l1.41 1.41L12 14.41l6.88 6.88 1.41-1.41L13.41 13l1.47-1.47z"/></svg>
+      Menu
+    </a>
+    <a href="orders.html" class="nav-item">
+      <svg viewBox="0 0 24 24"><path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/></svg>
+      Orders
+    </a>
+    <a href="cart.html" class="nav-item active">
+      <svg viewBox="0 0 24 24"><path d="M7 18c-1.1 0-1.99.9-1.99 2S5.9 22 7 22s2-.9 2-2-.9-2-2-2zM1 2v2h2l3.6 7.59-1.35 2.45c-.16.28-.25.61-.25.96 0 1.1.9 2 2 2h12v-2H7.42c-.14 0-.25-.11-.25-.25l.03-.12.9-1.63h7.45c.75 0 1.41-.41 1.75-1.03l3.58-6.49A1.003 1.003 0 0020 4H5.21l-.94-2H1zm16 16c-1.1 0-1.99.9-1.99 2s.89 2 1.99 2 2-.9 2-2-.9-2-2-2z"/></svg>
+      Cart
+      <div class="nav-badge" id="cart-badge">0</div>
+    </a>
+  </nav>
+
+  <script src="js/api.js"></script>
+  <script src="js/app.js"></script>
+  <script>
+    let currentTotal = 0;
+    
+    async function renderCart() {
+      const menuItems = await getMenu();
+      const container = document.getElementById('cart-items-container');
+      container.innerHTML = '';
+      
+      const cartObj = getCartItems();
+      const ids = Object.keys(cartObj);
+      
+      let totalItems = 0;
+      let subtotal = 0;
+      
+      if (ids.length === 0) {
+        const recommendations = getRecommendations(menuItems);
+        const recHtml = renderRecommendationsHtml(recommendations);
+        container.innerHTML = `
+          <div class="empty-state">
+            <div class="empty-icon">
+              <svg viewBox="0 0 24 24"><path d="M7 18c-1.1 0-1.99.9-1.99 2S5.9 22 7 22s2-.9 2-2-.9-2-2-2zM1 2v2h2l3.6 7.59-1.35 2.45c-.16.28-.25.61-.25.96 0 1.1.9 2 2 2h12v-2H7.42c-.14 0-.25-.11-.25-.25l.03-.12.9-1.63h7.45c.75 0 1.41-.41 1.75-1.03l3.58-6.49A1.003 1.003 0 0020 4H5.21l-.94-2H1zm16 16c-1.1 0-1.99.9-1.99 2s.89 2 1.99 2 2-.9 2-2-.9-2-2-2z"/></svg>
+            </div>
+            <h2>No Cart Items</h2>
+            <p>Looks like you haven't added anything to your cart yet.</p>
+          </div>
+          ${recHtml}
+        `;
+        document.getElementById('bill-summary').style.display = 'none';
+        document.getElementById('sticky-footer').style.display = 'none';
+        document.getElementById('cart-item-count').innerText = '0 items ready to order';
+        return;
+      }
+      
+      document.getElementById('bill-summary').style.display = 'block';
+      document.getElementById('sticky-footer').style.display = 'flex';
+      
+      ids.forEach(id => {
+        const item = menuItems.find(m => m.id == id);
+        if (!item) return;
+        
+        const qty = cartObj[id];
+        totalItems += qty;
+        const itemTotal = item.price * qty;
+        subtotal += itemTotal;
+        
+        const imgUrl = item.image_url.startsWith('http') ? item.image_url : `${item.image_url}`;
+        const card = document.createElement('div');
+        card.className = 'list-card';
+        card.innerHTML = `
+          <div class="img-container">
+            <img src="${imgUrl}" alt="${item.name}">
+          </div>
+          <div class="info">
+            <h3>${item.name}</h3>
+            <p class="price-small">₹${item.price} each</p>
+            <div class="price-row mt-4">
+              <div class="qty-control">
+                <button class="qty-btn" onclick="updateQty(${item.id}, -1)">-</button>
+                <div class="qty-value" id="qty-${item.id}">${qty}</div>
+                <button class="qty-btn plus" onclick="updateQty(${item.id}, 1)">+</button>
+              </div>
+            </div>
+          </div>
+          <div class="cart-actions">
+            <div class="price">₹${itemTotal}</div>
+            <button class="remove-btn" onclick="removeFromCart(${item.id})">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
+              Remove
+            </button>
+          </div>
+        `;
+        container.appendChild(card);
+      });
+      
+      document.getElementById('cart-item-count').innerText = `${totalItems} items ready to order`;
+      
+      const gst = Math.round(subtotal * 0.05);
+      const total = subtotal + gst;
+      currentTotal = total;
+      
+      document.getElementById('subtotal').innerText = `₹${subtotal}`;
+      document.getElementById('gst').innerText = `₹${gst}`;
+      document.getElementById('total').innerText = `₹${total}`;
+      document.getElementById('footer-total').innerText = `₹${total}`;
+    }
+    
+    async function checkout() {
+      const cartObj = getCartItems();
+      const ids = Object.keys(cartObj);
+      if (ids.length === 0) return;
+      
+      const menuItems = await getMenu();
+      const itemsArr = ids.map(id => {
+        const item = menuItems.find(m => m.id == id);
+        return { 
+          id: id, 
+          quantity: cartObj[id],
+          price: item ? item.price : 0
+        };
+      });
+      
+      const order = await placeOrder(itemsArr, currentTotal);
+      if (order) {
+        trackOrderHistory(order.id, itemsArr);
+        clearCart();
+        window.location.href = `orders.html?id=${order.id}`;
+      } else {
+        alert('Failed to place order');
+      }
+    }
+    
+    document.addEventListener('DOMContentLoaded', () => {
+      renderCart();
+      try {
+        const socket = io();
+        socket.on('refresh_menu', () => {
+          renderCart();
+        });
+        window.addEventListener("pageshow", function(event) {
+          if (event.persisted && socket.disconnected) {
+            socket.connect();
+          }
+        });
+      } catch(e) {}
+    });
+    document.addEventListener('cartUpdated', renderCart);
+  </script>
+<script src="https://cdn.socket.io/4.7.4/socket.io.min.js"></script><script src="js/theme.js"></script></body>
+</html>

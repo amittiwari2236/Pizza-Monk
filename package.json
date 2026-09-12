@@ -1,0 +1,21 @@
+{
+  "name": "canteen-order-app",
+  "version": "1.0.0",
+  "description": "Smart Canteen Application",
+  "scripts": {
+    "start": "cd backend && node server.js",
+    "dev": "cd backend && node server.js"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "dependencies": {
+    "cors": "^2.8.6",
+    "dotenv": "^16.6.1",
+    "express": "^4.22.2",
+    "multer": "^2.3.0",
+    "mysql2": "^3.24.4",
+    "socket.io": "^4.8.3",
+    "ws": "^8.21.3"
+  }
+}

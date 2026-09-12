@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Smart Canteen - Order Status</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+  <script>
+    if (!sessionStorage.getItem('userName')) {
+      window.location.href = 'login.html';
+    }
+  </script>
+</head>
+<body>
+  <div class="container" style="padding-bottom: 80px;">
+    <!-- Main content container -->
+    <div class="order-content" id="order-content" style="padding: 0;">
+      <!-- Injected via JS -->
+      <div style="text-align: center; padding: 100px;">Loading order details...</div>
+    </div>
+  </div>
+
+  <nav class="bottom-nav">
+    <a href="index.html" class="nav-item">
+      <svg viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
+      Home
+    </a>
+    <a href="menu.html" class="nav-item">
+      <svg viewBox="0 0 24 24"><path d="M8.1 13.34l2.83-2.83L3.91 3.5c-1.56 1.56-1.56 4.09 0 5.66l4.19 4.18zm6.78-1.81c1.53.71 3.68.21 5.27-1.38 1.91-1.91 2.28-4.65.81-6.12-1.46-1.46-4.2-1.1-6.12.81-1.59 1.59-2.09 3.74-1.38 5.27L3.7 19.87l1.41 1.41L12 14.41l6.88 6.88 1.41-1.41L13.41 13l1.47-1.47z"/></svg>
+      Menu
+    </a>
+    <a href="orders.html" class="nav-item active">
+      <svg viewBox="0 0 24 24"><path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/></svg>
+      Orders
+    </a>
+    <a href="cart.html" class="nav-item">
+      <svg viewBox="0 0 24 24"><path d="M7 18c-1.1 0-1.99.9-1.99 2S5.9 22 7 22s2-.9 2-2-.9-2-2-2zM1 2v2h2l3.6 7.59-1.35 2.45c-.16.28-.25.61-.25.96 0 1.1.9 2 2 2h12v-2H7.42c-.14 0-.25-.11-.25-.25l.03-.12.9-1.63h7.45c.75 0 1.41-.41 1.75-1.03l3.58-6.49A1.003 1.003 0 0020 4H5.21l-.94-2H1zm16 16c-1.1 0-1.99.9-1.99 2s.89 2 1.99 2 2-.9 2-2-.9-2-2-2z"/></svg>
+      Cart
+      <div class="nav-badge" id="cart-badge">0</div>
+    </a>
+  </nav>
+
+  <script src="https://cdn.socket.io/4.7.4/socket.io.min.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/app.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      let urlParams = new URLSearchParams(window.location.search);
+      let orderId = urlParams.get('id');
+      const container = document.getElementById('order-content');
+      
+      async function loadOrder() {
+        if (!orderId) {
+          let myOrders = JSON.parse(localStorage.getItem('my_orders') || '[]');
+          if (myOrders.length > 0) {
+            orderId = myOrders[myOrders.length - 1];
+            window.history.replaceState({}, '', `orders.html?id=${orderId}`);
+          }
+        }
+
+        let order = null;
+
+        if (orderId) {
+          order = await getOrder(orderId);
+        }
+
+        if (!order) {
+          const menuItems = await getMenu();
+          const recommendations = getRecommendations(menuItems);
+          const recHtml = renderRecommendationsHtml(recommendations);
+          
+          container.innerHTML = `
+            <div class="order-header-row" style="margin-top: 16px;">
+              <div>
+                <h1 style="font-size: 24px; letter-spacing: -0.5px;">Orders</h1>
+                <p style="color: var(--text-gray); margin-top: 4px; font-size: 13px;">Your recent orders</p>
+              </div>
+            </div>
+            <div class="empty-state">
+              <div class="empty-icon">
+                <svg viewBox="0 0 24 24"><path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/></svg>
+              </div>
+              <h2>No Orders</h2>
+              <p>You haven't placed any orders yet.</p>
+            </div>
+            ${recHtml}
+          `;
+          return;
+        }
+
+        order.currency = '₹';
+
+        let placedTime = order.placedAt;
+        try {
+          const d = new Date(order.placedAt);
+          if (!isNaN(d)) {
+            placedTime = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+          }
+        } catch (e) {}
+        
+        order.placedAt = placedTime;
+
+        let itemsHtml = '';
+        order.items.forEach(item => {
+          itemsHtml += `
+            <div class="summary-item">
+              <div style="display: flex;">
+                <div class="qty">${item.quantity}x</div>
+                <div class="details">
+                  <h4>${item.name}</h4>
+                  ${item.notes ? `<p>${item.notes}</p>` : ''}
+                </div>
+              </div>
+              <div class="price">${order.currency}${item.price.toFixed(2)}</div>
+            </div>
+          `;
+        });
+
+        let bannerTitle = '';
+        let bannerDesc = '';
+        let isPlacedDone = true;
+        let isPrepActive = false;
+        let isPrepDone = false;
+        let isReadyActive = false;
+        let isReadyDone = false;
+        let isReceivedDone = false;
+        
+        const isPacketOnly = order.items.length > 0 && order.items.every(item => item.itemType === 'Packet');
+
+        let bannerBg = '';
+        if (order.status === 'Pending') {
+          bannerTitle = 'Order Placed';
+          bannerDesc = 'Waiting for restaurant to confirm.';
+          isPrepDone = false;
+        } else if (order.status === 'Preparing') {
+          bannerTitle = 'Preparing...';
+          bannerDesc = 'Your food is being cooked fresh.';
+          isPrepActive = true;
+          if (isPacketOnly) {
+            bannerTitle = 'Processing...';
+            bannerDesc = 'We are packing your items.';
+          }
+        } else if (order.status === 'Almost Ready') {
+          bannerTitle = 'Almost Ready!';
+          bannerDesc = 'Your food is being plated.';
+          isPrepDone = true;
+        } else if (order.status === 'Ready') {
+          bannerTitle = 'Ready for Pickup';
+          bannerDesc = 'Please collect your food at the counter.';
+          isPrepDone = true;
+          isReadyActive = true;
+          bannerBg = 'background: linear-gradient(135deg, #4CAF50, #2E7D32); color: white;';
+        } else if (order.status === 'Received') {
+          bannerTitle = 'Completed';
+          bannerDesc = 'Enjoy your meal!';
+          isPrepDone = true;
+          isReadyDone = true;
+          isReceivedDone = true;
+        } else if (order.status === 'Cancelled') {
+          bannerTitle = 'Cancelled';
+          bannerDesc = 'This order has been cancelled.';
+          bannerBg = 'background: linear-gradient(135deg, #ef4444, #b91c1c); color: white;';
+        } else {
+          bannerTitle = order.status;
+        }
+
+        container.innerHTML = `
+          <div class="order-header-row" style="margin-top: 16px;">
+            <div>
+              <h1 style="font-size: 24px; letter-spacing: -0.5px;">Order #${order.id}</h1>
+              <p style="color: var(--text-gray); margin-top: 4px; font-size: 13px;">Placed at ${order.placedAt}</p>
+            </div>
+            <div class="token-badge">
+              <span>TOKEN</span>
+              <strong>#${order.token}</strong>
+            </div>
+          </div>
+
+          <div class="status-banner" style="${bannerBg}">
+            <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+              <div>
+                <div class="title" style="font-size: 16px;">
+                  ${bannerTitle}
+                </div>
+                <div class="desc" style="font-size: 12px; color: ${order.status === 'Ready' || order.status === 'Cancelled' ? 'rgba(255,255,255,0.8)' : ''}">${bannerDesc}</div>
+              </div>
+            </div>
+          </div>
+          
+          ${order.status === 'Pending' ? `
+          <button class="btn" style="background: #ef4444; color: white; border: none; width: 100%; padding: 14px; margin-bottom: 16px; margin-top: -8px; border-radius: 12px; font-weight: 600; font-size: 15px; display: flex; justify-content: center; align-items: center; gap: 8px; cursor: pointer; box-shadow: 0 4px 12px rgba(239,68,68,0.25);" onclick="cancelCurrentOrder('${order.id}')">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+            Cancel Order
+          </button>
+          ` : ''}
+
+          <div class="flex-col gap-4" style="margin-bottom: 16px; ${order.status === 'Cancelled' ? 'opacity: 0.5; pointer-events: none;' : ''}">
+            <div class="box-card">
+              <h3 style="font-size: 16px;">Order Status</h3>
+              <div class="timeline">
+                <div class="timeline-item done">
+                  <div class="icon"><svg><path d="M9 16.2L4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4L9 16.2z"/></svg></div>
+                  <div class="content">
+                    <h4>Order Placed</h4>
+                    <p>${order.placedAt}</p>
+                  </div>
+                </div>
+                ${isPacketOnly ? '' : `
+                <div class="timeline-item ${isPrepDone ? 'done' : (isPrepActive ? 'active' : 'pending')}">
+                  <div class="icon"><svg><path d="M11 9H9V2H7v7H5V2H3v7c0 2.12 1.66 3.88 3.75 3.99V22h2.5v-9.01C11.34 12.88 13 11.12 13 9V2h-2v7zm11-4h-3V2h-2v20h2v-8h3c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2z"/></svg></div>
+                  <div class="content">
+                    <h4>Preparing</h4>
+                    <p>Chef is working their magic</p>
+                  </div>
+                </div>
+                `}
+                <div class="timeline-item ${isReadyDone ? 'done' : (isReadyActive ? 'active' : 'pending')}">
+                  <div class="icon"><svg><path d="M19 6h-2c0-2.76-2.24-5-5-5S7 3.24 7 6H5c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm-7-3c1.66 0 3 1.34 3 3H9c0-1.66 1.34-3 3-3zm7 17H5V8h14v15z"/><circle cx="12" cy="14" r="2"/></svg></div>
+                  <div class="content">
+                    <h4>Ready for Pickup</h4>
+                    <p>Collect at the counter</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            ${order.status === 'Ready' || order.status === 'Received' || order.status === 'Cancelled' || isPacketOnly ? '' : `
+            <div class="box-card" style="padding: 16px; background: white; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); text-align: center; margin-top: 4px;">
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <div style="flex: 1; border-right: 1px solid #eee;">
+                  <div style="font-size: 11px; color: var(--text-gray); margin-bottom: 4px; font-weight: 500;">Current Queue</div>
+                  <div style="font-size: 24px; font-weight: 700; color: #111;">
+                    <span id="current-queue-count">--</span> <span style="font-size: 11px; font-weight: 500; color: #999;">people</span>
+                  </div>
+                </div>
+                <div style="flex: 1;">
+                  <div style="font-size: 11px; color: var(--text-gray); margin-bottom: 4px; font-weight: 500;">Est. Wait Time</div>
+                  <div style="font-size: 24px; font-weight: 700; color: #111;">
+                    ~<span id="est-wait-time">${order.estReadyIn}</span> <span style="font-size: 11px; font-weight: 500; color: #999;">min</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            `}
+          </div>
+
+          <div class="box-card order-summary-accordion">
+            <div class="accordion-header">
+              <h3 style="font-size: 16px;">Order Summary (${order.items.length} Items)</h3>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" style="color:var(--text-gray);"><path d="M7.41 15.41L12 10.83l4.59 4.58L18 14l-6-6-6 6z"/></svg>
+            </div>
+            <div class="summary-content">
+              ${itemsHtml}
+              <div class="summary-total">
+                <span>Total</span>
+                <span>${order.currency}${order.total.toFixed(2)}</span>
+              </div>
+            </div>
+          </div>
+        `;
+
+        await fetchRealtimeQueue();
+      }
+
+      async function fetchRealtimeQueue() {
+        try {
+          const res = await fetch(`/api/queue`);
+          const data = await res.json();
+          const qCount = document.getElementById('current-queue-count');
+          if (qCount) {
+            qCount.innerText = data.currentQueue;
+          }
+        } catch(err) {
+          console.error('Failed to fetch queue', err);
+        }
+      }
+
+      loadOrder();
+      
+      window.cancelCurrentOrder = async function(id) {
+        if(confirm('Are you sure you want to cancel this order?')) {
+          await cancelOrder(id);
+          // UI will update via socket automatically
+        }
+      };
+      
+      const socket = io(``);
+      socket.on('connect', () => {
+        // Resync completely on internet reconnect
+        loadOrder();
+      });
+      socket.on('refresh_orders', () => {
+        loadOrder();
+      });
+      socket.on('refresh_queue', () => {
+        fetchRealtimeQueue();
+      });
+
+      window.addEventListener("pageshow", function(event) {
+        if (event.persisted && socket.disconnected) {
+          socket.connect();
+        }
+      });
+
+      loadOrder();
+      
+      updateCartBadge();
+    });
+  </script>
+<script src="https://cdn.socket.io/4.7.4/socket.io.min.js"></script><script src="js/theme.js"></script></body>
+</html>

@@ -1,0 +1,786 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pizza Monk's - Login</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+  <script>
+    if (!sessionStorage.getItem('splashed')) {
+      window.location.href = 'splash.html';
+    } else if (sessionStorage.getItem('userName')) {
+      if (sessionStorage.getItem('userRole') === 'admin') {
+        window.location.href = 'admin.html';
+      } else {
+        window.location.href = 'index.html';
+      }
+    }
+  </script>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      min-height: 100vh;
+      background: linear-gradient(180deg, rgba(8, 6, 6, 0.72) 0%, rgba(12, 8, 8, 0.82) 40%, rgba(10, 6, 6, 0.94) 100%),
+                  url('img/login_bg.jpg') no-repeat center center / cover;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      color: #FFFFFF;
+      overflow-x: hidden;
+      position: relative;
+    }
+
+    .login-wrapper {
+      width: 100%;
+      max-width: 410px;
+      padding: 30px 20px 40px 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      position: relative;
+      z-index: 2;
+    }
+
+    /* Top Brand Logo */
+    .brand-logo-container {
+      margin-bottom: 8px;
+      display: flex;
+      justify-content: center;
+    }
+
+    .brand-logo-img {
+      width: 110px;
+      height: 110px;
+      border-radius: 50%;
+      object-fit: contain;
+      box-shadow: 0 10px 28px rgba(0, 0, 0, 0.65), 0 0 25px rgba(220, 38, 38, 0.25);
+      border: 2px solid rgba(255, 255, 255, 0.15);
+      transition: transform 0.3s ease;
+    }
+    .brand-logo-img:hover {
+      transform: scale(1.03);
+    }
+
+    /* Handwritten Brush Script Typography */
+    .brush-headline {
+      font-family: 'Caveat', cursive;
+      font-size: 34px;
+      line-height: 1.05;
+      text-align: center;
+      color: #FFFFFF;
+      margin-top: 6px;
+      letter-spacing: 0.3px;
+      text-shadow: 0 3px 12px rgba(0, 0, 0, 0.85);
+      user-select: none;
+    }
+
+    .brush-headline .red-script {
+      color: #E11D48;
+      display: block;
+      font-size: 38px;
+      font-weight: 700;
+      text-shadow: 0 3px 15px rgba(225, 29, 72, 0.4);
+    }
+
+    .brush-subtext {
+      font-size: 11px;
+      font-weight: 600;
+      color: rgba(255, 255, 255, 0.75);
+      letter-spacing: 0.8px;
+      text-transform: capitalize;
+      text-align: center;
+      margin-top: 8px;
+      margin-bottom: 22px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+    }
+
+    .brush-subtext .sep {
+      color: rgba(255, 255, 255, 0.35);
+    }
+
+    /* Glassmorphic Dark Login Card */
+    .login-card {
+      background: rgba(18, 16, 18, 0.82);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 22px;
+      padding: 24px 20px;
+      box-shadow: 0 20px 45px rgba(0, 0, 0, 0.65);
+      width: 100%;
+    }
+
+    /* Input Fields */
+    .input-wrapper {
+      position: relative;
+      margin-bottom: 14px;
+    }
+
+    .input-wrapper .input-icon {
+      position: absolute;
+      left: 14px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 18px;
+      height: 18px;
+      fill: none;
+      stroke: #9CA3AF;
+      stroke-width: 2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      pointer-events: none;
+      transition: stroke 0.2s;
+    }
+
+    .input-field {
+      width: 100%;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      border-radius: 12px;
+      padding: 14px 44px 14px 42px;
+      font-size: 14px;
+      color: #FFFFFF;
+      outline: none;
+      transition: all 0.2s ease;
+      font-family: 'Inter', sans-serif;
+    }
+
+    .input-field::placeholder {
+      color: #9CA3AF;
+      font-weight: 500;
+    }
+
+    .input-field:focus {
+      border-color: #E11D48;
+      background: rgba(255, 255, 255, 0.08);
+      box-shadow: 0 0 0 3px rgba(225, 29, 72, 0.22);
+    }
+
+    .input-field:focus + .input-icon {
+      stroke: #E11D48;
+    }
+
+    .eye-toggle-btn {
+      position: absolute;
+      right: 14px;
+      top: 50%;
+      transform: translateY(-50%);
+      background: none;
+      border: none;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #9CA3AF;
+      padding: 4px;
+      transition: color 0.2s;
+    }
+
+    .eye-toggle-btn:hover {
+      color: #FFFFFF;
+    }
+
+    .eye-toggle-btn svg {
+      width: 18px;
+      height: 18px;
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    /* Options Row (Remember Me & Forgot Password) */
+    .options-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 18px;
+      font-size: 12px;
+    }
+
+    .remember-me {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      color: #D1D5DB;
+      cursor: pointer;
+      font-weight: 500;
+      user-select: none;
+    }
+
+    .remember-me input[type="checkbox"] {
+      display: none;
+    }
+
+    .custom-checkbox {
+      width: 16px;
+      height: 16px;
+      border-radius: 4px;
+      border: 1.5px solid #6B7280;
+      background: rgba(255, 255, 255, 0.06);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s ease;
+    }
+
+    .remember-me input[type="checkbox"]:checked + .custom-checkbox {
+      background: #E11D48;
+      border-color: #E11D48;
+    }
+
+    .remember-me input[type="checkbox"]:checked + .custom-checkbox::after {
+      content: '✓';
+      font-size: 11px;
+      color: #FFFFFF;
+      font-weight: 800;
+    }
+
+    .forgot-link {
+      color: #E11D48;
+      font-weight: 600;
+      text-decoration: none;
+      cursor: pointer;
+      transition: opacity 0.2s;
+    }
+
+    .forgot-link:hover {
+      opacity: 0.85;
+      text-decoration: underline;
+    }
+
+    /* Error Alert */
+    .alert-banner {
+      background: rgba(220, 38, 38, 0.16);
+      border: 1px solid rgba(220, 38, 38, 0.45);
+      color: #FCA5A5;
+      padding: 10px 14px;
+      border-radius: 10px;
+      font-size: 12px;
+      font-weight: 500;
+      margin-bottom: 14px;
+      display: none;
+      align-items: center;
+      gap: 8px;
+      animation: fadeIn 0.25s ease;
+    }
+
+    .alert-banner.show {
+      display: flex;
+    }
+
+    .alert-banner svg {
+      width: 16px;
+      height: 16px;
+      fill: #EF4444;
+      flex-shrink: 0;
+    }
+
+    /* Primary Login Button */
+    .login-btn-primary {
+      width: 100%;
+      background: linear-gradient(135deg, #DC2626 0%, #B91C1C 100%);
+      color: #FFFFFF;
+      padding: 14px;
+      border-radius: 12px;
+      font-size: 15px;
+      font-weight: 700;
+      border: none;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      box-shadow: 0 6px 18px rgba(220, 38, 38, 0.35);
+      transition: all 0.25s ease;
+      font-family: 'Inter', sans-serif;
+    }
+
+    .login-btn-primary:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 8px 24px rgba(220, 38, 38, 0.45);
+      background: linear-gradient(135deg, #EF4444 0%, #DC2626 100%);
+    }
+
+    .login-btn-primary:active {
+      transform: translateY(1px);
+    }
+
+    .login-btn-primary:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    /* Divider */
+    .or-divider {
+      display: flex;
+      align-items: center;
+      text-align: center;
+      margin: 18px 0;
+      color: #6B7280;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.6px;
+    }
+
+    .or-divider::before, .or-divider::after {
+      content: '';
+      flex: 1;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+    }
+
+    .or-divider span {
+      padding: 0 12px;
+    }
+
+    /* Create Account Button */
+    .create-account-btn {
+      width: 100%;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(220, 38, 38, 0.45);
+      color: #FFFFFF;
+      padding: 13px;
+      border-radius: 12px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: all 0.2s ease;
+      font-family: 'Inter', sans-serif;
+    }
+
+    .create-account-btn:hover {
+      background: rgba(220, 38, 38, 0.12);
+      border-color: #DC2626;
+    }
+
+    .create-account-btn svg {
+      width: 16px;
+      height: 16px;
+      fill: #DC2626;
+    }
+
+    /* Card Footer Tags */
+    .card-footer-tags {
+      text-align: center;
+      margin-top: 16px;
+      font-size: 11px;
+      color: #9CA3AF;
+      letter-spacing: 0.4px;
+      font-weight: 500;
+    }
+
+    /* Custom Glass Modal (For Create Account & Forgot Password) */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.75);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      z-index: 999;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.25s ease;
+    }
+
+    .modal-overlay.open {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .modal-card {
+      background: #181518;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 20px;
+      padding: 24px;
+      width: 100%;
+      max-width: 380px;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6);
+      transform: scale(0.95);
+      transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .modal-overlay.open .modal-card {
+      transform: scale(1);
+    }
+
+    .modal-header-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 16px;
+    }
+
+    .modal-header-row h3 {
+      font-size: 17px;
+      font-weight: 700;
+      color: #FFFFFF;
+      margin: 0;
+    }
+
+    .modal-close-btn {
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.1);
+      color: #FFFFFF;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      cursor: pointer;
+      border: none;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(-4px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="login-wrapper">
+    <!-- Brand Logo -->
+    <div class="brand-logo-container">
+      <img src="img/logo.png" alt="Pizza Monk's Logo" class="brand-logo-img">
+    </div>
+
+    <!-- Handwritten Brush Headline -->
+    <div class="brush-headline">
+      <span>Good Food</span>
+      <span class="red-script">Brings People</span>
+      <span>Together</span>
+    </div>
+
+    <!-- Subtext -->
+    <div class="brush-subtext">
+      <span>Fresh Ingredients</span>
+      <span class="sep">|</span>
+      <span>Great Taste</span>
+      <span class="sep">|</span>
+      <span>Always</span>
+    </div>
+
+    <!-- Login Card -->
+    <div class="login-card">
+      <form id="login-form" onsubmit="handleLoginSubmit(event)" novalidate>
+        <!-- Error Alert -->
+        <div class="alert-banner" id="error-alert">
+          <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
+          <span id="error-alert-text">Incorrect credentials</span>
+        </div>
+
+        <!-- Input 1: Email Address / Scholar ID -->
+        <div class="input-wrapper">
+          <svg class="input-icon" viewBox="0 0 24 24">
+            <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+            <polyline points="22,6 12,13 2,6"/>
+          </svg>
+          <input 
+            type="text" 
+            id="login-id" 
+            class="input-field" 
+            placeholder="Email Address" 
+            autocomplete="username" 
+            required
+          >
+        </div>
+
+        <!-- Input 2: Password -->
+        <div class="input-wrapper">
+          <svg class="input-icon" viewBox="0 0 24 24">
+            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+            <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+          </svg>
+          <input 
+            type="password" 
+            id="login-pwd" 
+            class="input-field" 
+            placeholder="Password" 
+            autocomplete="current-password"
+          >
+          <button type="button" class="eye-toggle-btn" onclick="togglePasswordVisibility('login-pwd', this)" aria-label="Toggle password visibility">
+            <svg viewBox="0 0 24 24">
+              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+              <circle cx="12" cy="12" r="3"/>
+            </svg>
+          </button>
+        </div>
+
+        <!-- Options Row -->
+        <div class="options-row">
+          <label class="remember-me">
+            <input type="checkbox" id="remember-me-check">
+            <span class="custom-checkbox"></span>
+            <span>Remember Me</span>
+          </label>
+          <a class="forgot-link" onclick="openForgotPasswordModal()">Forgot Password?</a>
+        </div>
+
+        <!-- Primary Login Button -->
+        <button type="submit" class="login-btn-primary" id="login-submit-btn">
+          <span id="login-btn-text">Login</span>
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
+            <path d="M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z"/>
+          </svg>
+        </button>
+      </form>
+
+      <!-- OR Divider -->
+      <div class="or-divider">
+        <span>OR</span>
+      </div>
+
+      <!-- Create New Account Button -->
+      <button type="button" class="create-account-btn" onclick="openSignupModal()">
+        <svg viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+        <span>Create New Account</span>
+      </button>
+
+      <!-- Footer Tags -->
+      <div class="card-footer-tags">
+        Pizza &nbsp;•&nbsp; Pasta &nbsp;•&nbsp; Burgers &nbsp;•&nbsp; More
+      </div>
+    </div>
+  </div>
+
+  <!-- Create New Account Modal -->
+  <div class="modal-overlay" id="signup-modal">
+    <div class="modal-card">
+      <div class="modal-header-row">
+        <h3>Create New Account</h3>
+        <button class="modal-close-btn" onclick="closeSignupModal()">✕</button>
+      </div>
+      <form onsubmit="handleSignupSubmit(event)">
+        <div class="alert-banner" id="signup-alert">
+          <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
+          <span id="signup-alert-text">Error</span>
+        </div>
+
+        <div class="input-wrapper">
+          <input type="text" id="signup-name" class="input-field" placeholder="Full Name" style="padding-left: 14px;" required>
+        </div>
+        <div class="input-wrapper">
+          <input type="text" id="signup-id" class="input-field" placeholder="Scholar ID / Email" style="padding-left: 14px;" required>
+        </div>
+        <div class="input-wrapper">
+          <input type="password" id="signup-pwd" class="input-field" placeholder="Password (or DOB DD/MM/YYYY)" style="padding-left: 14px;" required>
+        </div>
+
+        <button type="submit" class="login-btn-primary" style="margin-top: 6px;">
+          <span>Register & Login</span>
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Forgot Password Modal -->
+  <div class="modal-overlay" id="forgot-modal">
+    <div class="modal-card">
+      <div class="modal-header-row">
+        <h3>Account Assistance</h3>
+        <button class="modal-close-btn" onclick="closeForgotPasswordModal()">✕</button>
+      </div>
+      <div style="font-size: 13px; color: #D1D5DB; line-height: 1.5;">
+        <p style="margin-bottom: 12px;"><strong style="color: #FFFFFF;">🎓 Student Login:</strong><br>Use your Scholar ID and default password format (Date of Birth: <code>DD/MM/YYYY</code>, e.g. <code>05/11/2004</code>).</p>
+        <p style="margin-bottom: 12px;"><strong style="color: #FFFFFF;">🍕 Visitor / Guest:</strong><br>Enter any valid email address directly to sign in instantly.</p>
+        <p><strong style="color: #FFFFFF;">🔐 Administrator:</strong><br>Contact master canteen admin at <code>admin@canteen.com</code>.</p>
+      </div>
+      <button type="button" class="login-btn-primary" onclick="closeForgotPasswordModal()" style="margin-top: 18px; padding: 10px;">
+        <span>Got It</span>
+      </button>
+    </div>
+  </div>
+
+  <script>
+    // Security & Client-side Validation Helper
+    function sanitizeInput(str) {
+      if (!str) return '';
+      return str.trim().replace(/[<>]/g, '');
+    }
+
+    // Toggle password masking
+    function togglePasswordVisibility(fieldId, btn) {
+      const field = document.getElementById(fieldId);
+      if (!field) return;
+      if (field.type === 'password') {
+        field.type = 'text';
+        btn.style.color = '#E11D48';
+      } else {
+        field.type = 'password';
+        btn.style.color = '#9CA3AF';
+      }
+    }
+
+    // Load Remembered ID if available
+    document.addEventListener('DOMContentLoaded', () => {
+      const savedId = localStorage.getItem('pm_remembered_id');
+      const idInput = document.getElementById('login-id');
+      const rememberCheck = document.getElementById('remember-me-check');
+
+      if (savedId && idInput) {
+        idInput.value = savedId;
+        if (rememberCheck) rememberCheck.checked = true;
+      }
+    });
+
+    // Form Submission & Authentication
+    async function handleLoginSubmit(e) {
+      e.preventDefault();
+      const idInput = document.getElementById('login-id');
+      const pwdInput = document.getElementById('login-pwd');
+      const alertBox = document.getElementById('error-alert');
+      const alertText = document.getElementById('error-alert-text');
+      const btn = document.getElementById('login-submit-btn');
+      const btnText = document.getElementById('login-btn-text');
+      const rememberCheck = document.getElementById('remember-me-check');
+
+      const id = sanitizeInput(idInput.value);
+      const password = pwdInput.value.trim();
+
+      alertBox.classList.remove('show');
+
+      // Validation
+      if (!id) {
+        alertText.innerText = 'Please enter your Email or Scholar ID';
+        alertBox.classList.add('show');
+        idInput.focus();
+        return;
+      }
+
+      // If not an email and no password
+      if (!id.includes('@') && !password) {
+        alertText.innerText = 'Password (DOB) is required for Scholar IDs';
+        alertBox.classList.add('show');
+        pwdInput.focus();
+        return;
+      }
+
+      // UI Loading state
+      btn.disabled = true;
+      btnText.innerText = 'Verifying...';
+
+      try {
+        const res = await fetch('/api/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id, password })
+        });
+
+        const data = await res.json();
+
+        if (data.success) {
+          // Handle Remember Me
+          if (rememberCheck && rememberCheck.checked) {
+            localStorage.setItem('pm_remembered_id', id);
+          } else {
+            localStorage.removeItem('pm_remembered_id');
+          }
+
+          // Secure Session Management
+          sessionStorage.setItem('userName', data.userName);
+          sessionStorage.setItem('userRole', data.role);
+          sessionStorage.setItem('authTime', Date.now().toString());
+
+          // Role-based authorization redirect
+          if (data.role === 'admin') {
+            window.location.href = 'admin.html';
+          } else {
+            window.location.href = 'index.html';
+          }
+        } else {
+          alertText.innerText = data.error || 'Invalid credentials. Please try again.';
+          alertBox.classList.add('show');
+          btn.disabled = false;
+          btnText.innerText = 'Login';
+        }
+      } catch (err) {
+        alertText.innerText = 'Connection error. Please check your network.';
+        alertBox.classList.add('show');
+        btn.disabled = false;
+        btnText.innerText = 'Login';
+      }
+    }
+
+    // Modal Controls
+    function openSignupModal() {
+      document.getElementById('signup-modal').classList.add('open');
+    }
+    function closeSignupModal() {
+      document.getElementById('signup-modal').classList.remove('open');
+    }
+
+    function openForgotPasswordModal() {
+      document.getElementById('forgot-modal').classList.add('open');
+    }
+    function closeForgotPasswordModal() {
+      document.getElementById('forgot-modal').classList.remove('open');
+    }
+
+    // Handle Create New Account
+    async function handleSignupSubmit(e) {
+      e.preventDefault();
+      const name = sanitizeInput(document.getElementById('signup-name').value);
+      const user_id = sanitizeInput(document.getElementById('signup-id').value);
+      const dob = document.getElementById('signup-pwd').value.trim();
+      const alertBox = document.getElementById('signup-alert');
+      const alertText = document.getElementById('signup-alert-text');
+
+      alertBox.classList.remove('show');
+
+      if (!name || !user_id || !dob) {
+        alertText.innerText = 'All fields are required';
+        alertBox.classList.add('show');
+        return;
+      }
+
+      try {
+        const res = await fetch('/api/users', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ user_id, dob, name, role: 'student' })
+        });
+        const data = await res.json();
+
+        if (data && !data.error) {
+          closeSignupModal();
+          // Auto fill into login and submit
+          document.getElementById('login-id').value = user_id;
+          document.getElementById('login-pwd').value = dob;
+          document.getElementById('login-form').dispatchEvent(new Event('submit'));
+        } else {
+          alertText.innerText = data.error || 'Failed to create account';
+          alertBox.classList.add('show');
+        }
+      } catch (err) {
+        alertText.innerText = 'Server error during registration';
+        alertBox.classList.add('show');
+      }
+    }
+  </script>
+</body>
+</html>

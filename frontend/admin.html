@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Smart Canteen - Admin Panel</title>
+  <!-- Material Symbols for Icons -->
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/admin.css">
+  <script>
+    const role = sessionStorage.getItem('userRole');
+    const user = sessionStorage.getItem('userName');
+    if (role !== 'admin' && user !== 'Admin') {
+      window.location.href = 'login.html';
+    }
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body class="admin-body">
+
+  <!-- Sidebar -->
+  <aside class="admin-sidebar">
+    <div class="admin-brand">
+      <img src="img/logo.png" alt="Pizza Monk's" style="width: 44px; height: 44px; border-radius: 50%; object-fit: cover; box-shadow: 0 4px 10px rgba(0,0,0,0.2);">
+      <h2>Pizza Monk's<br><small>Admin Panel</small></h2>
+    </div>
+
+    <nav class="admin-nav">
+      <a href="#" class="nav-item active" data-view="dashboard">
+        <span class="material-symbols-outlined">dashboard</span>
+        Dashboard
+      </a>
+      <a href="#" class="nav-item" data-view="orders">
+        <span class="material-symbols-outlined">receipt_long</span>
+        Live Orders
+      </a>
+      <a href="#" class="nav-item" data-view="menu">
+        <span class="material-symbols-outlined">restaurant_menu</span>
+        Menu Management
+      </a>
+      <a href="#" class="nav-item" data-view="categories">
+        <span class="material-symbols-outlined">category</span>
+        Categories
+      </a>
+      <a href="#" class="nav-item" data-view="students">
+        <span class="material-symbols-outlined">group</span>
+        Students
+      </a>
+    </nav>
+    <script>
+      function logout() {
+        sessionStorage.clear();
+        window.location.href = 'login.html';
+      }
+    </script>
+
+    <div class="sidebar-bottom">
+      <div class="admin-campus">
+        <span class="material-symbols-outlined">apartment</span>
+        <div>
+          <strong>DSVV Campus</strong>
+          <p>Good Food, Better Campus.</p>
+        </div>
+      </div>
+      
+      <a href="index.html" class="action-card">
+        <span class="material-symbols-outlined">arrow_back</span>
+        Back to App
+      </a>
+
+      <a href="#" onclick="logout()" class="action-card">
+        <span class="material-symbols-outlined">logout</span>
+        Logout
+      </a>
+    </div>
+  </aside>
+
+  <!-- Main Content -->
+  <main class="admin-main">
+    
+    <!-- Header -->
+    <header class="admin-header">
+      <div class="header-greeting">
+        <h1>Welcome, Admin! 👋</h1>
+        <p>Manage orders, menu, queue and keep the canteen running smoothly.</p>
+      </div>
+      <div class="header-profile">
+        <div class="notification-bell">
+          <span class="material-symbols-outlined">notifications</span>
+          <span class="badge">3</span>
+        </div>
+        <div class="user-info">
+          <img src="https://ui-avatars.com/api/?name=Admin&background=0b3d2c&color=fff" alt="Admin" class="avatar">
+          <div>
+            <strong>Canteen Admin</strong>
+            <span>DSVV Canteen</span>
+          </div>
+          <span class="material-symbols-outlined">expand_more</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- VIEWS -->
+    <div class="view-container">
+      
+      <!-- Dashboard View -->
+      <section id="view-dashboard" class="view active">
+        <div class="card" style="margin-bottom: 24px; display: flex; justify-content: space-between; align-items: center; padding: 20px;">
+          <div>
+            <h3 style="margin: 0; font-size: 18px;">Canteen Status</h3>
+            <p style="color: var(--text-gray); margin: 4px 0 0 0; font-size: 14px;">Control whether the canteen is currently accepting orders.</p>
+          </div>
+          <div style="display: flex; gap: 12px; align-items: center;">
+            <div id="admin-status-indicator" style="display: flex; align-items: center; gap: 8px; font-weight: 600;">
+              <!-- Populated via JS -->
+            </div>
+            <button class="btn" style="background: #10b981; color: white; border: none; padding: 10px 16px; border-radius: 8px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 6px; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2);" onclick="openCanteen()">
+              <span class="material-symbols-outlined" style="font-size: 18px;">storefront</span> Open Canteen
+            </button>
+            <button class="btn" style="background: #ef4444; color: white; border: none; padding: 10px 16px; border-radius: 8px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 6px; box-shadow: 0 4px 12px rgba(239, 68, 68, 0.2);" onclick="closeCanteen()">
+              <span class="material-symbols-outlined" style="font-size: 18px;">close</span> Close Canteen
+            </button>
+          </div>
+        </div>
+
+        <div class="card" style="margin-bottom: 24px; padding: 20px;">
+          <h3 style="margin: 0 0 12px 0; font-size: 18px;">Theme Management</h3>
+          <p style="color: var(--text-gray); margin: 0 0 16px 0; font-size: 14px;">Select the global color theme for the User Panel. Changes apply instantly.</p>
+          <style>
+            .theme-btn {
+              padding: 10px 20px;
+              border: none;
+              border-radius: 8px;
+              color: white;
+              font-weight: 600;
+              cursor: pointer;
+              transition: transform 0.2s, box-shadow 0.2s;
+              box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+              font-family: inherit;
+              font-size: 14px;
+            }
+            .theme-btn:hover {
+              transform: translateY(-2px);
+              box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+            }
+            .theme-btn:active {
+              transform: translateY(0);
+            }
+          </style>
+          <div id="theme-selector" style="display: flex; gap: 12px; flex-wrap: wrap;">
+            <button class="theme-btn" style="background: #D32F2F;" onclick="updateTheme('1. RED THEME')">Red</button>
+            <button class="theme-btn" style="background: #14492A;" onclick="updateTheme('2. GREEN THEME')">Green</button>
+            <button class="theme-btn" style="background: #1565C0;" onclick="updateTheme('3. BLUE THEME')">Blue</button>
+            <button class="theme-btn" style="background: #6A1B9A;" onclick="updateTheme('4. PURPLE THEME')">Purple</button>
+            <button class="theme-btn" style="background: #E65100;" onclick="updateTheme('5. ORANGE THEME')">Orange</button>
+            <button class="theme-btn" style="background: #00695C;" onclick="updateTheme('6. TEAL THEME')">Teal</button>
+            <button class="theme-btn" style="background: #212121;" onclick="updateTheme('7. DARK THEME')">Dark</button>
+            <button class="theme-btn" style="background: #C2185B;" onclick="updateTheme('8. PINK THEME')">Pink</button>
+          </div>
+        </div>
+
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-icon" style="background:#e0f2f1; color:#00695c;">
+              <span class="material-symbols-outlined">receipt_long</span>
+            </div>
+            <div class="stat-info">
+              <p>Total Orders Today</p>
+              <h3 id="stat-total-orders">0</h3>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon" style="background:#fff3e0; color:#ef6c00;">
+              <span class="material-symbols-outlined">pending_actions</span>
+            </div>
+            <div class="stat-info">
+              <p>Pending Orders</p>
+              <h3 id="stat-pending">0</h3>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon" style="background:#e3f2fd; color:#1565c0;">
+              <span class="material-symbols-outlined">skillet</span>
+            </div>
+            <div class="stat-info">
+              <p>Preparing / Almost Ready</p>
+              <h3 id="stat-preparing">0</h3>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon" style="background:#e8f5e9; color:#2e7d32;">
+              <span class="material-symbols-outlined">check_circle</span>
+            </div>
+            <div class="stat-info">
+              <p>Completed / Ready</p>
+              <h3 id="stat-completed">0</h3>
+            </div>
+          </div>
+          
+          <div class="stat-card">
+            <div class="stat-icon" style="background:#ffebee; color:#c62828;">
+              <span class="material-symbols-outlined">cancel</span>
+            </div>
+            <div class="stat-info">
+              <p>Cancelled Orders</p>
+              <h3 id="stat-cancelled">0</h3>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon" style="background:#ede7f6; color:#5e35b1;">
+              <span class="material-symbols-outlined">payments</span>
+            </div>
+            <div class="stat-info">
+              <p>Today's Revenue</p>
+              <h3 id="stat-revenue">₹0</h3>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon live-pulse-bg" style="background:#e0f7fa; color:#00838f;">
+              <span class="material-symbols-outlined">groups</span>
+            </div>
+            <div class="stat-info">
+              <p>Current Queue <span class="live-badge">Live</span></p>
+              <h3 id="stat-queue">0 <span>orders</span></h3>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon live-pulse-bg" style="background:#f3e5f5; color:#8e24aa;">
+              <span class="material-symbols-outlined">person</span>
+            </div>
+            <div class="stat-info">
+              <p>Active Users <span class="live-badge" style="background:#d1c4e9; color:#4a148c;">Live</span></p>
+              <h3 id="stat-active-users">0 <span>online</span></h3>
+            </div>
+          </div>
+        </div>
+
+        <div class="dashboard-content" style="display: grid; grid-template-columns: 2fr 1fr; gap: 24px; margin-bottom: 24px;">
+          <!-- Charts Section -->
+          <div style="display: flex; flex-direction: column; gap: 24px;">
+            <div class="card" style="padding: 20px;">
+              <h3 style="margin: 0 0 16px 0;">Orders Over Time</h3>
+              <div style="position: relative; height: 300px; width: 100%;">
+                <canvas id="chart-orders-time"></canvas>
+              </div>
+            </div>
+            
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
+              <div class="card" style="padding: 20px;">
+                <h3 style="margin: 0 0 16px 0;">Order Status Distribution</h3>
+                <div style="position: relative; height: 250px; width: 100%;">
+                  <canvas id="chart-status-dist"></canvas>
+                </div>
+              </div>
+              <div class="card" style="padding: 20px;">
+                <h3 style="margin: 0 0 16px 0;">Most Popular Items</h3>
+                <div style="position: relative; height: 250px; width: 100%;">
+                  <canvas id="chart-popular-items"></canvas>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Live Activity Feed -->
+          <div class="card" style="padding: 20px; display: flex; flex-direction: column;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+              <h3 style="margin: 0;">Live Activity Feed</h3>
+              <span class="live-badge" style="display: flex; align-items: center; gap: 4px;"><span class="pulse-dot"></span> Streaming</span>
+            </div>
+            <div id="live-activity-feed" style="flex-grow: 1; overflow-y: auto; max-height: 600px; display: flex; flex-direction: column; gap: 12px; padding-right: 8px;">
+              <!-- Populated via JS -->
+              <div style="text-align: center; color: #888; margin-top: 40px;">Waiting for live activity...</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Live Orders View -->
+      <section id="view-orders" class="view">
+        <div class="card-header">
+          <h3>Live Orders Queue</h3>
+        </div>
+        <div class="orders-kanban" id="orders-kanban">
+          <!-- Populated via JS -->
+        </div>
+      </section>
+
+      <!-- Menu Management View -->
+      <section id="view-menu" class="view">
+        <div class="card-header">
+          <div style="display: flex; align-items: center; gap: 16px;">
+            <h3 style="margin: 0;">Menu Items</h3>
+            <select id="admin-menu-filter" class="form-control" style="padding: 6px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-color);" onchange="renderMenuTable()">
+              <option value="All">All Categories</option>
+              <!-- Populated via JS -->
+            </select>
+          </div>
+          <button class="btn btn-primary" onclick="openMenuModal()">
+            <span class="material-symbols-outlined">add</span> Add Menu Item
+          </button>
+        </div>
+        
+        <div id="menu-grid-container" style="display: flex; flex-direction: column; gap: 32px; margin-top: 16px;">
+          <!-- Populated via JS -->
+        </div>
+      </section>
+
+      <!-- Category Management View -->
+      <section id="view-categories" class="view">
+        <div class="card-header">
+          <h3>Category Management</h3>
+          <div style="display: flex; gap: 8px;">
+            <button class="btn btn-secondary" onclick="seedMockItems()">
+              <span class="material-symbols-outlined">auto_fix_high</span> Seed 10 Items/Cat
+            </button>
+            <button class="btn btn-primary" onclick="openCategoryModal()">
+              <span class="material-symbols-outlined">add</span> Add Category
+            </button>
+          </div>
+        </div>
+        
+        <table class="admin-table">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Name</th>
+              <th>Icon (SVG)</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="category-table-body">
+            <!-- Populated via JS -->
+          </tbody>
+        </table>
+      </section>
+
+      <!-- Students Management View -->
+      <section id="view-students" class="view">
+        <div class="card-header">
+          <h3>Student Management</h3>
+          <div style="display: flex; gap: 8px;">
+            <button class="btn btn-secondary" onclick="openBulkStudentModal()">
+              <span class="material-symbols-outlined">upload_file</span> Bulk Add
+            </button>
+            <button class="btn btn-primary" onclick="openStudentModal()">
+              <span class="material-symbols-outlined">person_add</span> Add Student
+            </button>
+          </div>
+        </div>
+        
+        <table class="admin-table">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Scholar ID</th>
+              <th>DOB (Password)</th>
+              <th>Name</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="student-table-body">
+            <!-- Populated via JS -->
+          </tbody>
+        </table>
+      </section>
+
+    </div>
+  </main>
+
+  <!-- Menu Item Modal -->
+  <div class="modal-overlay" id="menu-modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 id="modal-title">Add Menu Item</h3>
+        <button class="icon-btn" onclick="closeMenuModal()">
+          <span class="material-symbols-outlined">close</span>
+        </button>
+      </div>
+      <form id="menu-form">
+        <input type="hidden" id="item-id">
+        <div class="form-group">
+          <label>Food Name</label>
+          <input type="text" id="item-name" required>
+        </div>
+        <div class="form-group">
+          <label>Description</label>
+          <textarea id="item-desc" rows="2"></textarea>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Price (₹)</label>
+            <input type="number" id="item-price" required>
+          </div>
+          <div class="form-group">
+          <label>Category</label>
+          <select id="item-category" required>
+            <!-- Injected via JS -->
+          </select>
+        </div>
+          <div class="form-group">
+            <label>Item Type</label>
+            <select id="item-type" required>
+              <option value="Non-Packet">Non-Packet</option>
+              <option value="Packet">Packet</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Food Image</label>
+          <input type="file" id="item-image" accept="image/*">
+        </div>
+        <div class="toggles-container">
+          <div class="toggle-pill">
+            <label class="switch">
+              <input type="checkbox" id="item-available" checked>
+              <span class="slider round"></span>
+            </label>
+            <span class="pill-label">Available</span>
+          </div>
+          <div class="toggle-pill">
+            <label class="switch">
+              <input type="checkbox" id="item-special">
+              <span class="slider round"></span>
+            </label>
+            <span class="pill-label">Today's Special</span>
+          </div>
+          <div class="toggle-pill">
+            <label class="switch">
+              <input type="checkbox" id="item-mycanteen">
+              <span class="slider round"></span>
+            </label>
+            <span class="pill-label">My Canteen</span>
+          </div>
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="btn btn-secondary" onclick="closeMenuModal()">Cancel</button>
+          <button type="submit" class="btn btn-primary">Save Item</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Student Modal -->
+  <div class="modal-overlay" id="student-modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>Add Student</h3>
+        <button class="icon-btn" onclick="closeStudentModal()">
+          <span class="material-symbols-outlined">close</span>
+        </button>
+      </div>
+      <form id="student-form">
+        <div class="form-group">
+          <label>Scholar ID</label>
+          <input type="text" id="student-id" required>
+        </div>
+        <div class="form-group">
+          <label>Date of Birth (DD/MM/YYYY)</label>
+          <input type="text" id="student-dob" placeholder="e.g. 05/11/2004" required>
+        </div>
+        <div class="form-group">
+          <label>Student Name</label>
+          <input type="text" id="student-name" required>
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="btn btn-secondary" onclick="closeStudentModal()">Cancel</button>
+          <button type="submit" class="btn btn-primary">Save Student</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Bulk Student Modal -->
+  <div class="modal-overlay" id="bulk-student-modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>Bulk Add Students</h3>
+        <button class="icon-btn" onclick="closeBulkStudentModal()">
+          <span class="material-symbols-outlined">close</span>
+        </button>
+      </div>
+      <form id="bulk-student-form">
+        <div class="form-group">
+          <label>CSV Data (ScholarID,DOB,Name)</label>
+          <p style="font-size:12px;color:gray;">Example:<br>23144004,05/11/2004,Amit Tiwari<br>23144005,10/12/2005,Ravi Kumar</p>
+          <textarea id="bulk-student-data" rows="6" required></textarea>
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="btn btn-secondary" onclick="closeBulkStudentModal()">Cancel</button>
+          <button type="submit" class="btn btn-primary">Bulk Add</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Print Receipt Container -->
+  <div id="print-receipt" class="print-receipt"></div>
+
+  <!-- Category Modal -->
+  <div class="modal-overlay" id="category-modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 id="category-modal-title">Add Category</h3>
+        <button class="icon-btn" onclick="closeCategoryModal()">
+          <span class="material-symbols-outlined">close</span>
+        </button>
+      </div>
+      <form id="category-form">
+        <input type="hidden" id="category-id">
+        <div class="form-group">
+          <label>Category Name</label>
+          <input type="text" id="category-name" required>
+        </div>
+        <div class="form-group">
+          <label>Icon (SVG Code/URL)</label>
+          <textarea id="category-icon" rows="3" required></textarea>
+        </div>
+        <div class="form-actions">
+          <button type="button" class="btn btn-secondary" onclick="closeCategoryModal()">Cancel</button>
+          <button type="submit" class="btn btn-primary">Save Category</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="https://cdn.socket.io/4.7.4/socket.io.min.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/admin.js"></script>
+<script src="https://cdn.socket.io/4.7.4/socket.io.min.js"></script><script src="js/theme.js"></script></body>
+</html>

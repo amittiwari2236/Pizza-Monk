@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pizza Monk's - My Canteen</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+  <script>
+    if (!sessionStorage.getItem('splashed')) {
+      window.location.href = 'splash.html';
+    } else if (!sessionStorage.getItem('userName')) {
+      window.location.href = 'login.html';
+    }
+  </script>
+</head>
+<body>
+  <div class="container">
+    <!-- Brand & User Header -->
+    <header class="brand-header">
+      <div class="brand-info">
+        <div class="brand-logo-badge" title="Pizza Monk's - Premium Quality">
+          <img src="img/logo.png" alt="Pizza Monk's Logo">
+        </div>
+        <div class="brand-titles">
+          <div class="brand-title-row">
+            <span class="brand-name">Pizza Monk's</span>
+            <span class="brand-canteen-pill">My Canteen</span>
+          </div>
+          <div class="user-greeting" id="greeting">Hi, Foodie! 👋</div>
+        </div>
+      </div>
+      <div style="display: flex; gap: 10px; align-items: center;">
+        <button class="icon-btn" onclick="logout()" title="Logout" style="width: 38px; height: 38px; color: #DC2626; border-radius: 50%;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+        </button>
+        <button class="icon-btn has-badge" onclick="window.location.href='cart.html'" title="Cart" style="width: 38px; height: 38px;">
+          <svg viewBox="0 0 24 24"><path d="M7 18c-1.1 0-1.99.9-1.99 2S5.9 22 7 22s2-.9 2-2-.9-2-2-2zM1 2v2h2l3.6 7.59-1.35 2.45c-.16.28-.25.61-.25.96 0 1.1.9 2 2 2h12v-2H7.42c-.14 0-.25-.11-.25-.25l.03-.12.9-1.63h7.45c.75 0 1.41-.41 1.75-1.03l3.58-6.49A1.003 1.003 0 0020 4H5.21l-.94-2H1zm16 16c-1.1 0-1.99.9-1.99 2s.89 2 1.99 2 2-.9 2-2-.9-2-2-2z"/></svg>
+          <div class="badge" id="cart-dot-badge"></div>
+        </button>
+      </div>
+    </header>
+
+    <!-- Dynamic 7-Banner Carousel Mounted Here -->
+    <div id="dynamic-carousel-mount">
+      <!-- Injected via dataMining.js with exactly 7 banners -->
+    </div>
+
+    <!-- Single Horizontal Sliding Category Row (Directly below Hero Banner) -->
+    <div class="category-sliding-wrapper">
+      <div class="category-sliding-track" id="category-sliding-track">
+        <!-- Injected via categoryFilter.js: 7 initial categories + 'See All' button -->
+      </div>
+    </div>
+
+    <!-- Quick Filter Bar (Immediately below Categories) -->
+    <div class="filter-bar-container">
+      <div class="filter-bar-track" id="filter-bar-track">
+        <button class="filter-trigger-btn" id="open-filter-modal-btn" onclick="openFilterModal()">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+            <path d="M3 17v2h6v-2H3zM3 5v2h10V5H3zm10 16v-2h8v-2h-8v-2h-2v6h2zM7 9v2H3v2h4v2h2V9H7zm14 4v-2H11v2h10zm-6-4h2V7h4V5h-4V3h-2v6z"/>
+          </svg>
+          <span>Filters</span>
+          <span class="filter-badge" id="filter-active-count" style="display:none;">0</span>
+          <svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor"><path d="M7 10l5 5 5-5z"/></svg>
+        </button>
+
+        <button class="quick-pill" id="pill-under-150" onclick="toggleQuickFilter('under150')">
+          Under ₹150
+        </button>
+
+        <button class="quick-pill" id="pill-pure-veg" onclick="toggleQuickFilter('pureVeg')">
+          🌱 Pure Veg
+        </button>
+
+        <button class="quick-pill" id="pill-specials" onclick="toggleQuickFilter('specials')">
+          ⭐ Rating 4.0+
+        </button>
+
+        <button class="quick-pill" id="pill-price-asc" onclick="toggleQuickFilter('priceAsc')">
+          Cost: Low to High
+        </button>
+
+        <button class="quick-pill" id="pill-bestseller" onclick="toggleQuickFilter('bestseller')">
+          🔥 Bestsellers
+        </button>
+      </div>
+    </div>
+
+    <!-- Filtered Results Container (Active when category or filters applied) -->
+    <div id="filtered-results-section" style="display: none; margin-top: 14px; margin-bottom: 24px;">
+      <div class="section-title-row" style="margin-bottom: 10px;">
+        <div>
+          <h2 id="filtered-section-title" style="margin: 0; font-size: 17px;">Filtered Items</h2>
+          <span id="filtered-section-count" style="font-size: 12px; color: var(--text-gray);">0 items found</span>
+        </div>
+        <button onclick="clearAllFilters()" style="color: #E11D48; font-size: 12px; font-weight: 700; background: none; border: none; cursor: pointer; display: flex; align-items: center; gap: 4px;">
+          Clear All ✕
+        </button>
+      </div>
+      <div class="active-chips-row" id="active-chips-row" style="display: none;"></div>
+      <div class="filtered-items-grid" id="filtered-items-grid"></div>
+    </div>
+
+    <!-- Live Canteen & Kitchen Wait Time Pill -->
+    <div class="queue-pill-banner" id="kitchen-status-strip">
+      <div class="queue-pill-info">
+        <div class="live-pulse-dot" id="live-pulse-indicator"></div>
+        <div>
+          <div style="font-size: 13px; font-weight: 700;" id="canteen-status-text">Canteen Open • Taking Orders</div>
+          <div style="font-size: 11px; color: var(--text-gray);" id="queue-time-text">Checking queue wait time...</div>
+        </div>
+      </div>
+      <button onclick="window.location.href='menu.html'" style="background: #8B1E2D; color: white; padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: 700; border: none; cursor: pointer;">
+        Menu →
+      </button>
+    </div>
+
+    <!-- Quick Reorder Strip (Mined from past orders) -->
+    <div id="quick-reorder-wrapper" style="display: none;" class="reorder-section">
+      <div class="section-title-row">
+        <h2>⚡ Order Again</h2>
+        <a href="orders.html" class="see-all-link">Order History</a>
+      </div>
+      <div class="specials-scroll" id="quick-reorder-container"></div>
+    </div>
+
+    <!-- Today's Specials -->
+    <div class="specials-header" style="margin-top: 24px;">
+      <h2 style="margin:0;">⭐ Today's Specials</h2>
+      <a href="menu.html" class="see-all">See all</a>
+    </div>
+    <div class="specials-scroll" id="specials-container">
+      <!-- Injected via JS -->
+    </div>
+
+    <!-- Trending & Most Demanded (Data Mined from system orders) -->
+    <div class="specials-header" style="margin-top: 24px;">
+      <h2 style="margin:0;">🔥 Trending & In Demand</h2>
+      <a href="menu.html" class="see-all">Explore</a>
+    </div>
+    <div class="specials-scroll" id="trending-container">
+      <!-- Injected via JS -->
+    </div>
+
+    <!-- My Canteen (User Favorites) -->
+    <div class="my-canteen-section" id="my-canteen-wrapper" style="display:none; margin-top: 24px;">
+      <div class="specials-header" style="margin-bottom: 12px;">
+        <h2 style="margin:0;">❤️ My Favorites</h2>
+      </div>
+      <div class="my-canteen-list" id="my-canteen-container">
+        <!-- Injected via JS -->
+      </div>
+    </div>
+  </div>
+
+  <nav class="bottom-nav">
+    <a href="index.html" class="nav-item active">
+      <svg viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
+      Home
+    </a>
+    <a href="menu.html" class="nav-item">
+      <svg viewBox="0 0 24 24"><path d="M8.1 13.34l2.83-2.83L3.91 3.5c-1.56 1.56-1.56 4.09 0 5.66l4.19 4.18zm6.78-1.81c1.53.71 3.68.21 5.27-1.38 1.91-1.91 2.28-4.65.81-6.12-1.46-1.46-4.2-1.1-6.12.81-1.59 1.59-2.09 3.74-1.38 5.27L3.7 19.87l1.41 1.41L12 14.41l6.88 6.88 1.41-1.41L13.41 13l1.47-1.47z"/></svg>
+      Menu
+    </a>
+    <a href="orders.html" class="nav-item">
+      <svg viewBox="0 0 24 24"><path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/></svg>
+      Orders
+    </a>
+    <a href="cart.html" class="nav-item">
+      <svg viewBox="0 0 24 24"><path d="M7 18c-1.1 0-1.99.9-1.99 2S5.9 22 7 22s2-.9 2-2-.9-2-2-2zM1 2v2h2l3.6 7.59-1.35 2.45c-.16.28-.25.61-.25.96 0 1.1.9 2 2 2h12v-2H7.42c-.14 0-.25-.11-.25-.25l.03-.12.9-1.63h7.45c.75 0 1.41-.41 1.75-1.03l3.58-6.49A1.003 1.003 0 0020 4H5.21l-.94-2H1zm16 16c-1.1 0-1.99.9-1.99 2s.89 2 1.99 2 2-.9 2-2-.9-2-2-2z"/></svg>
+      Cart
+      <div class="nav-badge" id="cart-badge">0</div>
+    </a>
+  </nav>
+
+  <script src="https://cdn.socket.io/4.7.4/socket.io.min.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/app.js"></script>
+  <script src="js/dataMining.js"></script>
+  <script src="js/categoryFilter.js"></script>
+  <script src="js/theme.js"></script>
+
+  <script>
+    let allOrders = [];
+    let allMenuItems = [];
+    let allCategories = [];
+    let userFavorites = [];
+    let currentMinedInsights = null;
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      const savedName = sessionStorage.getItem('userName');
+      if (savedName) {
+        document.getElementById('greeting').innerText = `Hi, ${savedName}! 👋`;
+      }
+
+      await loadAllDataAndRender();
+      setupRealTimeSync();
+    });
+
+    async function loadAllDataAndRender() {
+      const userId = sessionStorage.getItem('userName');
+
+      try {
+        const [items, categories, qData, ordersRes, favRes] = await Promise.all([
+          getMenu(),
+          getCategories(),
+          fetch('/api/queue').then(r => r.json()).catch(() => null),
+          fetch('/api/orders').then(r => r.json()).catch(() => []),
+          userId ? fetch(`/api/favorites/${encodeURIComponent(userId)}`).then(r => r.json()).catch(() => []) : []
+        ]);
+
+        allMenuItems = Array.isArray(items) ? items : [];
+        window.allMenuItems = allMenuItems;
+        allCategories = Array.isArray(categories) ? categories : [];
+        allOrders = Array.isArray(ordersRes) ? ordersRes : [];
+        userFavorites = Array.isArray(favRes) ? favRes : [];
+        window.currentUserFavorites = userFavorites;
+
+        // 1. Mine data
+        currentMinedInsights = mineOrderInsights(allMenuItems, allOrders, userFavorites);
+
+        // 2. Build & setup exactly 7 dynamic banners
+        const banners = build7DynamicBanners(allMenuItems, currentMinedInsights);
+        setupBannerCarousel(banners, 'dynamic-carousel-mount');
+
+        // 3. Queue & Kitchen wait time pill
+        if (qData) updateCanteenStatusBadge(qData);
+
+        // 4. Categories & Multi-Facet Filters
+        if (typeof initCategoryAndFilter === 'function') {
+          initCategoryAndFilter(allMenuItems, allCategories);
+        }
+
+        // 5. Specials
+        renderSpecials(allMenuItems);
+
+        // 6. Trending (Data Mined)
+        renderTrending(allMenuItems, currentMinedInsights);
+
+        // 7. Quick Reorder
+        renderQuickReorder(allMenuItems);
+
+        // 8. My Canteen Favorites
+        if (window.renderMyCanteen) window.renderMyCanteen();
+
+        updateCartBadge();
+      } catch (err) {
+        console.error('Failed to load homepage data:', err);
+      }
+    }
+
+    function updateCanteenStatusBadge(data) {
+      const textEl = document.getElementById('canteen-status-text');
+      const queueTimeEl = document.getElementById('queue-time-text');
+      const pulseDot = document.getElementById('live-pulse-indicator');
+      if (!textEl) return;
+
+      const isOpen = data.canteenStatus === 'OPEN';
+      if (isOpen) {
+        textEl.innerText = `Canteen Open • ${data.hours || 'Taking Orders'}`;
+        pulseDot.style.background = '#10B981';
+        pulseDot.style.boxShadow = '0 0 0 0 rgba(16, 185, 129, 0.7)';
+      } else {
+        textEl.innerText = `Canteen Closed • ${data.hours || 'Opens at 8:00 AM'}`;
+        pulseDot.style.background = '#EF4444';
+        pulseDot.style.boxShadow = 'none';
+      }
+
+      if (queueTimeEl) {
+        const count = data.currentQueue !== undefined ? data.currentQueue : 0;
+        const wait = data.estWaitTime !== undefined ? data.estWaitTime : 5;
+        queueTimeEl.innerText = `Live Queue: ${count} in prep • Est. wait ~${wait} mins`;
+      }
+    }
+
+    function renderCategories(categories) {
+      if (typeof initCategoryAndFilter === 'function') {
+        initCategoryAndFilter(allMenuItems, categories);
+      }
+    }
+
+    function renderFoodCard(item, container, showHeart = true) {
+      const qty = getCartQuantity(item.id);
+      const imgUrl = item.image_url ? (item.image_url.startsWith('http') ? item.image_url : `${item.image_url}`) : '/assets/food/cheese_corn_pizza.jpg';
+      const isFavorite = window.currentUserFavorites.includes(item.id);
+      const userId = sessionStorage.getItem('userName');
+
+      const card = document.createElement('div');
+      card.className = `food-card my-canteen-item ${!item.available ? 'out-of-stock' : ''}`;
+
+      let heartHtml = '';
+      if (showHeart) {
+        heartHtml = `
+          <div class="heart-icon ${isFavorite ? 'active' : ''}" onclick="toggleFavorite(${item.id}, this, '${userId}')">
+            <svg viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+          </div>
+        `;
+      }
+
+      card.innerHTML = `
+        ${heartHtml}
+        <div class="img-container">
+          <img src="${imgUrl}" alt="${item.name}" onerror="this.onerror=null;this.src='/assets/food/cheese_corn_pizza.jpg';">
+        </div>
+        <div class="content">
+          <h3>${item.name}</h3>
+          <p class="desc">${item.description || ''}</p>
+          <div class="price">₹${item.price}</div>
+          ${item.available ? `
+          <div class="actions">
+            <div class="qty-control">
+              <button class="qty-btn" onclick="updateQty(${item.id}, -1)">-</button>
+              <div class="qty-value" id="qty-${item.id}">${qty}</div>
+              <button class="qty-btn plus" onclick="updateQty(${item.id}, 1)">+</button>
+            </div>
+          </div>
+          ` : `
+          <div class="out-of-stock-label" style="color: #ef4444; font-weight: bold; margin-top: 8px; font-size: 14px;">
+            Out of Stock
+          </div>
+          `}
+        </div>
+      `;
+      container.appendChild(card);
+    }
+
+    function renderSpecials(items) {
+      const container = document.getElementById('specials-container');
+      if (!container) return;
+      container.innerHTML = '';
+      const specials = (Array.isArray(items) ? items : []).filter(i => i.is_special && i.available);
+      const list = specials.length > 0 ? specials : items.slice(0, 6);
+      list.forEach(item => renderFoodCard(item, container, true));
+    }
+
+    function renderTrending(items, insights) {
+      const container = document.getElementById('trending-container');
+      if (!container) return;
+      container.innerHTML = '';
+      const trending = (insights && insights.scoredItems ? insights.scoredItems : items).filter(i => i.available).slice(0, 6);
+      trending.forEach(item => renderFoodCard(item, container, true));
+    }
+
+    function renderQuickReorder(items) {
+      const wrapper = document.getElementById('quick-reorder-wrapper');
+      const container = document.getElementById('quick-reorder-container');
+      if (!wrapper || !container) return;
+
+      let orderedIds = [];
+      try {
+        const freq = JSON.parse(localStorage.getItem('item_freq') || '{}');
+        orderedIds = Object.keys(freq).map(Number);
+      } catch (e) {}
+
+      const reorderItems = items.filter(i => orderedIds.includes(i.id) && i.available);
+      if (reorderItems.length === 0) {
+        wrapper.style.display = 'none';
+        return;
+      }
+
+      wrapper.style.display = 'block';
+      container.innerHTML = '';
+      reorderItems.slice(0, 5).forEach(item => renderFoodCard(item, container, false));
+    }
+
+    function renderListCard(item, container) {
+      const qty = getCartQuantity(item.id);
+      const imgUrl = item.image_url ? (item.image_url.startsWith('http') ? item.image_url : `${item.image_url}`) : '/assets/food/cheese_corn_pizza.jpg';
+
+      const card = document.createElement('div');
+      card.className = `list-card my-canteen-item ${!item.available ? 'out-of-stock' : ''}`;
+      card.innerHTML = `
+        <div class="img-container">
+          <img src="${imgUrl}" alt="${item.name}" onerror="this.onerror=null;this.src='/assets/food/cheese_corn_pizza.jpg';">
+        </div>
+        <div class="info">
+          <h3>${item.name}</h3>
+          <p class="desc" style="font-size: 11px; color: var(--text-gray); margin-bottom: 4px; display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden;">${item.description || ''}</p>
+          <div class="price">₹${item.price}</div>
+        </div>
+        <div class="cart-actions" style="display: flex; align-items: center; justify-content: flex-end;">
+          ${item.available ? `
+          <div class="qty-control">
+            <button class="qty-btn" onclick="updateQty(${item.id}, -1)">-</button>
+            <div class="qty-value" id="qty-${item.id}">${qty}</div>
+            <button class="qty-btn plus" onclick="updateQty(${item.id}, 1)">+</button>
+          </div>
+          ` : `
+          <span style="color: #ef4444; font-size: 12px; font-weight: 600;">Out of Stock</span>
+          `}
+        </div>
+      `;
+      container.appendChild(card);
+    }
+
+    window.renderMyCanteen = function() {
+      const myCanteenWrapper = document.getElementById('my-canteen-wrapper');
+      const myCanteenContainer = document.getElementById('my-canteen-container');
+      if (!myCanteenWrapper || !myCanteenContainer) return;
+
+      myCanteenContainer.innerHTML = '';
+      const myCanteenItems = (window.allMenuItems || []).filter(i => (window.currentUserFavorites || []).includes(i.id));
+
+      if (myCanteenItems.length === 0) {
+        myCanteenWrapper.style.display = 'none';
+        return;
+      }
+
+      myCanteenWrapper.style.display = 'block';
+      const visibleItems = myCanteenItems.slice(0, 2);
+      const hiddenItems = myCanteenItems.slice(2);
+
+      visibleItems.forEach(item => renderListCard(item, myCanteenContainer));
+
+      if (hiddenItems.length > 0) {
+        const moreBtn = document.createElement('div');
+        moreBtn.className = 'more-btn-text';
+        moreBtn.innerHTML = `
+          More <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6 1.41-1.41z"/></svg>
+        `;
+        moreBtn.onclick = () => {
+          moreBtn.style.display = 'none';
+          hiddenItems.forEach(item => renderListCard(item, myCanteenContainer));
+        };
+        myCanteenContainer.appendChild(moreBtn);
+      }
+    };
+
+    // ==========================================================
+    // Real-Time Sync via Socket.io
+    // ==========================================================
+    function setupRealTimeSync() {
+      try {
+        const socket = io();
+
+        // 1. Menu updates from Admin (price, availability, add, edit, delete)
+        socket.on('refresh_menu', async () => {
+          console.log('⚡ Real-time menu update received from Admin');
+          const items = await getMenu();
+          allMenuItems = Array.isArray(items) ? items : [];
+          window.allMenuItems = allMenuItems;
+          currentMinedInsights = mineOrderInsights(allMenuItems, allOrders, userFavorites);
+
+          const banners = build7DynamicBanners(allMenuItems, currentMinedInsights);
+          setupBannerCarousel(banners, 'dynamic-carousel-mount');
+
+          renderSpecials(allMenuItems);
+          renderTrending(allMenuItems, currentMinedInsights);
+          if (typeof initCategoryAndFilter === 'function') {
+            initCategoryAndFilter(allMenuItems, allCategories);
+            if (typeof applyFilters === 'function') applyFilters();
+          }
+          if (window.renderMyCanteen) window.renderMyCanteen();
+        });
+
+        // 2. Category updates from Admin
+        socket.on('refresh_categories', async () => {
+          console.log('⚡ Real-time category update received from Admin');
+          const categories = await getCategories();
+          allCategories = Array.isArray(categories) ? categories : [];
+          renderCategories(allCategories);
+        });
+
+        // 3. Canteen open/close status and hours
+        socket.on('refresh_status', (settings) => {
+          console.log('⚡ Real-time status update received from Admin');
+          updateCanteenStatusBadge(settings);
+        });
+
+        // 4. Live queue and preparation updates
+        socket.on('refresh_queue', async () => {
+          try {
+            const qRes = await fetch('/api/queue');
+            const qData = await qRes.json();
+            updateCanteenStatusBadge(qData);
+          } catch (e) {}
+        });
+
+        // 5. Order history updates
+        socket.on('refresh_orders', async () => {
+          try {
+            const ordersRes = await fetch('/api/orders').then(r => r.json());
+            allOrders = Array.isArray(ordersRes) ? ordersRes : [];
+            currentMinedInsights = mineOrderInsights(allMenuItems, allOrders, userFavorites);
+            renderTrending(allMenuItems, currentMinedInsights);
+            renderQuickReorder(allMenuItems);
+          } catch (e) {}
+        });
+
+        window.addEventListener("pageshow", function(event) {
+          if (event.persisted && socket.disconnected) {
+            socket.connect();
+          }
+        });
+      } catch (err) {
+        console.warn('Socket connection error:', err);
+      }
+    }
+
+    async function toggleFavorite(itemId, element, userId) {
+      const isActive = element.classList.contains('active');
+      if (isActive) {
+        element.classList.remove('active');
+        window.currentUserFavorites = (window.currentUserFavorites || []).filter(id => id !== itemId);
+      } else {
+        element.classList.add('active');
+        if (!window.currentUserFavorites) window.currentUserFavorites = [];
+        window.currentUserFavorites.push(itemId);
+      }
+
+      if (window.renderMyCanteen) window.renderMyCanteen();
+
+      try {
+        await fetch(`/api/favorites/toggle`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ userId, itemId })
+        });
+      } catch (err) {
+        console.error("Failed to toggle favorite:", err);
+      }
+    }
+
+    function logout() {
+      sessionStorage.clear();
+      window.location.href = 'login.html';
+    }
+  </script>
+</body>
+</html>
