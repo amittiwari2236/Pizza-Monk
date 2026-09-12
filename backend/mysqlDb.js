@@ -2,10 +2,35 @@ const mysql = require('mysql2/promise');
 const fs = require('fs');
 const path = require('path');
 
-const DB_NAME = process.env.MYSQL_DATABASE || 'smart_canteen';
 const LOCAL_DATA_FILE = path.join(__dirname, 'local_data.json');
 
 let pool = null;
+
+function getDbConfig() {
+  const connectionUrl = process.env.DATABASE_URL || process.env.MYSQL_URL;
+  if (connectionUrl) {
+    try {
+      const parsed = new URL(connectionUrl);
+      return {
+        host: parsed.hostname,
+        port: Number(parsed.port) || 3306,
+        user: decodeURIComponent(parsed.username || 'root'),
+        password: decodeURIComponent(parsed.password || ''),
+        database: parsed.pathname ? parsed.pathname.replace(/^\//, '') : 'railway'
+      };
+    } catch (e) {
+      console.warn('Could not parse database URL, falling back to individual env variables');
+    }
+  }
+
+  return {
+    host: process.env.MYSQL_HOST || process.env.MYSQLHOST || '127.0.0.1',
+    port: Number(process.env.MYSQL_PORT || process.env.MYSQLPORT || 3306),
+    user: process.env.MYSQL_USER || process.env.MYSQLUSER || 'root',
+    password: process.env.MYSQL_PASSWORD || process.env.MYSQLPASSWORD || '',
+    database: process.env.MYSQL_DATABASE || process.env.MYSQLDATABASE || 'smart_canteen'
+  };
+}
 
 function toIso(value) {
   if (!value) return value;
@@ -34,31 +59,37 @@ function mapOrder(row) {
   };
 }
 
-async function connectServer() {
-  return mysql.createConnection({
-    host: process.env.MYSQL_HOST || '127.0.0.1',
-    port: Number(process.env.MYSQL_PORT || 3306),
-    user: process.env.MYSQL_USER || 'root',
-    password: process.env.MYSQL_PASSWORD || '',
-    multipleStatements: true
-  });
-}
-
 async function init() {
-  const admin = await connectServer();
-  await admin.query(`CREATE DATABASE IF NOT EXISTS \`${DB_NAME}\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci`);
-  await admin.end();
+  const config = getDbConfig();
+
+  // Try creating DB if on local / private server; ignore if user lacks global CREATE DB permissions on managed cloud
+  try {
+    const admin = await mysql.createConnection({
+      host: config.host,
+      port: config.port,
+      user: config.user,
+      password: config.password,
+      multipleStatements: true
+    });
+    await admin.query(`CREATE DATABASE IF NOT EXISTS \`${config.database}\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci`);
+    await admin.end();
+  } catch (err) {
+    // Expected on managed platforms like Railway where DB is pre-provisioned
+  }
+
+  const isSsl = process.env.MYSQL_SSL === 'true';
 
   pool = mysql.createPool({
-    host: process.env.MYSQL_HOST || '127.0.0.1',
-    port: Number(process.env.MYSQL_PORT || 3306),
-    user: process.env.MYSQL_USER || 'root',
-    password: process.env.MYSQL_PASSWORD || '',
-    database: DB_NAME,
+    host: config.host,
+    port: config.port,
+    user: config.user,
+    password: config.password,
+    database: config.database,
     waitForConnections: true,
     connectionLimit: 10,
     multipleStatements: true,
     dateStrings: false,
+    ssl: isSsl ? { rejectUnauthorized: false } : undefined,
     typeCast(field, next) {
       if (field.type === 'TINY' && field.length === 1) {
         return field.string() === '1';

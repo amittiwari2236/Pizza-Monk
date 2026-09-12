@@ -18,10 +18,28 @@ const port = process.env.PORT || 3000;
 app.use(cors());
 app.use(express.json());
 
-app.use(express.static(path.join(__dirname, '../frontend')));
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+const frontendDir = path.join(__dirname, '../frontend');
+const uploadsDir = path.join(__dirname, 'uploads');
+if (!fs.existsSync(uploadsDir)) {
+  try { fs.mkdirSync(uploadsDir, { recursive: true }); } catch (e) {}
+}
+
+app.use(express.static(frontendDir));
+app.use('/uploads', express.static(uploadsDir));
+
+// Production health check for Railway
+app.get('/health', (req, res) => res.json({ status: 'ok', uptime: process.uptime(), time: new Date().toISOString() }));
 
 app.get('/favicon.ico', (req, res) => res.status(204).end());
+
+// Clean route mappings for direct URL access without .html
+app.get('/admin', (req, res) => res.sendFile(path.join(frontendDir, 'admin.html')));
+app.get('/login', (req, res) => res.sendFile(path.join(frontendDir, 'login.html')));
+app.get('/menu', (req, res) => res.sendFile(path.join(frontendDir, 'menu.html')));
+app.get('/cart', (req, res) => res.sendFile(path.join(frontendDir, 'cart.html')));
+app.get('/orders', (req, res) => res.sendFile(path.join(frontendDir, 'orders.html')));
+app.get('/splash', (req, res) => res.sendFile(path.join(frontendDir, 'splash.html')));
+
 
 const storage = multer.memoryStorage();
 const upload = multer({ storage: storage });
@@ -481,6 +499,18 @@ app.put('/api/orders/:id/cancel', async (req, res) => {
   }
 });
 
+// Fallback for HTML page navigation and bookmarks
+app.get('*', (req, res, next) => {
+  if (req.path.startsWith('/api/') || req.path.startsWith('/uploads/') || req.path.startsWith('/socket.io/')) {
+    return next();
+  }
+  const cleanPath = path.join(frontendDir, req.path + '.html');
+  if (fs.existsSync(cleanPath)) {
+    return res.sendFile(cleanPath);
+  }
+  res.sendFile(path.join(frontendDir, 'index.html'));
+});
+
 async function start() {
   // Try MySQL first; if unavailable, fall back to local JSON-based DB
   try {
@@ -496,8 +526,8 @@ async function start() {
   }
 
   if (require.main === module || !process.env.VERCEL) {
-    server.listen(port, () => {
-      console.log(`Smart Canteen Backend running at http://localhost:${port}`);
+    server.listen(port, '0.0.0.0', () => {
+      console.log(`Smart Canteen Backend running at http://0.0.0.0:${port}`);
     });
   }
 }
