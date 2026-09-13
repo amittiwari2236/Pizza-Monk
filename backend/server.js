@@ -219,44 +219,6 @@ app.delete('/api/categories/:id', async (req, res) => {
   }
 });
 
-app.post('/api/seed', async (req, res) => {
-  try {
-    const cats = await db.getCategories();
-    const categoryImages = {
-      'Pizza': 'https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=300&q=80',
-      'Breads': 'https://images.unsplash.com/photo-1619535860434-ba1d8fa12536?w=300&q=80',
-      'Burger': 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=300&q=80',
-      'Sandwich': 'https://images.unsplash.com/photo-1528735602780-2552fd46c7af?w=300&q=80',
-      'Pasta': 'https://images.unsplash.com/photo-1645112411341-6c4fd023714a?w=300&q=80',
-      'French Fries': 'https://images.unsplash.com/photo-1576107232684-1279f3908594?w=300&q=80',
-      'Wraps': 'https://images.unsplash.com/photo-1626700051175-6818013e1d4f?w=300&q=80',
-      'Beverages': 'https://images.unsplash.com/photo-1517701550927-30cf4ba1dba5?w=300&q=80'
-    };
-
-    let count = 0;
-    for (const cat of cats) {
-      for (let i = 1; i <= 3; i++) {
-        await db.addMenuItem({
-          name: `${cat.name} Special ${i}`,
-          description: `Delicious ${cat.name.toLowerCase()} delicacy prepared fresh daily.`,
-          price: Math.floor(Math.random() * 40) + 20,
-          category: cat.name,
-          available: true,
-          is_special: i === 1,
-          is_my_canteen: false,
-          item_type: cat.name === 'Snacks' || cat.name === 'Dairy' ? 'Packet' : 'Non-Packet',
-          image_url: categoryImages[cat.name] || '/assets/masala_dosa.jpg'
-        });
-        count++;
-      }
-    }
-    io.emit('refresh_menu');
-    io.emit('refresh_categories');
-    res.json({ success: true, inserted: count });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
 
 app.get('/api/favorites/:userId', async (req, res) => {
   try {
@@ -738,7 +700,23 @@ async function start() {
 
   if (require.main === module || !process.env.VERCEL) {
     server.listen(port, '0.0.0.0', () => {
-      console.log(`Smart Canteen Backend running at http://0.0.0.0:${port}`);
+      const os = require('os');
+      const interfaces = os.networkInterfaces();
+      let lanIp = 'localhost';
+      for (const name of Object.keys(interfaces)) {
+        for (const iface of interfaces[name]) {
+          if (iface.family === 'IPv4' && !iface.internal) {
+            lanIp = iface.address;
+            break;
+          }
+        }
+      }
+
+      console.log(`\n======================================================`);
+      console.log(`🍕 Pizza Monk Production Backend Ready`);
+      console.log(`➜ Local:   http://localhost:${port}`);
+      console.log(`➜ Network: http://${lanIp}:${port} (Access from other devices on Wi-Fi)`);
+      console.log(`======================================================\n`);
     });
   }
 }

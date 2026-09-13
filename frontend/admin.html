@@ -48,10 +48,6 @@
         <span class="material-symbols-outlined">category</span>
         Categories
       </a>
-      <a href="#" class="nav-item" data-view="students">
-        <span class="material-symbols-outlined">group</span>
-        Students
-      </a>
     </nav>
     <script>
       function logout() {
@@ -62,10 +58,10 @@
 
     <div class="sidebar-bottom">
       <div class="admin-campus">
-        <span class="material-symbols-outlined">apartment</span>
+        <span class="material-symbols-outlined">storefront</span>
         <div>
-          <strong>DSVV Campus</strong>
-          <p>Good Food, Better Campus.</p>
+          <strong>Pizza Monk</strong>
+          <p>Fresh Food, Good Mood.</p>
         </div>
       </div>
       
@@ -88,18 +84,17 @@
     <header class="admin-header">
       <div class="header-greeting">
         <h1>Welcome, Admin! 👋</h1>
-        <p>Manage orders, menu, queue and keep the canteen running smoothly.</p>
+        <p>Manage live orders, menu, kitchen dispatch, and operations smoothly.</p>
       </div>
       <div class="header-profile">
         <div class="notification-bell">
           <span class="material-symbols-outlined">notifications</span>
-          <span class="badge">3</span>
         </div>
         <div class="user-info">
-          <img src="https://ui-avatars.com/api/?name=Admin&background=0b3d2c&color=fff" alt="Admin" class="avatar">
+          <img src="https://ui-avatars.com/api/?name=Admin&background=FF7A00&color=fff" alt="Admin" class="avatar">
           <div>
-            <strong>Canteen Admin</strong>
-            <span>DSVV Canteen</span>
+            <strong>Pizza Monk Admin</strong>
+            <span>Station Manager</span>
           </div>
           <span class="material-symbols-outlined">expand_more</span>
         </div>
@@ -358,36 +353,6 @@
         </table>
       </section>
 
-      <!-- Students Management View -->
-      <section id="view-students" class="view">
-        <div class="card-header">
-          <h3>Student Management</h3>
-          <div style="display: flex; gap: 8px;">
-            <button class="btn btn-secondary" onclick="openBulkStudentModal()">
-              <span class="material-symbols-outlined">upload_file</span> Bulk Add
-            </button>
-            <button class="btn btn-primary" onclick="openStudentModal()">
-              <span class="material-symbols-outlined">person_add</span> Add Student
-            </button>
-          </div>
-        </div>
-        
-        <table class="admin-table">
-          <thead>
-            <tr>
-              <th>ID</th>
-              <th>Scholar ID</th>
-              <th>DOB (Password)</th>
-              <th>Name</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody id="student-table-body">
-            <!-- Populated via JS -->
-          </tbody>
-        </table>
-      </section>
-
     </div>
   </main>
 
@@ -459,59 +424,6 @@
         <div class="modal-actions">
           <button type="button" class="btn btn-secondary" onclick="closeMenuModal()">Cancel</button>
           <button type="submit" class="btn btn-primary">Save Item</button>
-        </div>
-      </form>
-    </div>
-  </div>
-
-  <!-- Student Modal -->
-  <div class="modal-overlay" id="student-modal">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h3>Add Student</h3>
-        <button class="icon-btn" onclick="closeStudentModal()">
-          <span class="material-symbols-outlined">close</span>
-        </button>
-      </div>
-      <form id="student-form">
-        <div class="form-group">
-          <label>Scholar ID</label>
-          <input type="text" id="student-id" required>
-        </div>
-        <div class="form-group">
-          <label>Date of Birth (DD/MM/YYYY)</label>
-          <input type="text" id="student-dob" placeholder="e.g. 05/11/2004" required>
-        </div>
-        <div class="form-group">
-          <label>Student Name</label>
-          <input type="text" id="student-name" required>
-        </div>
-        <div class="modal-actions">
-          <button type="button" class="btn btn-secondary" onclick="closeStudentModal()">Cancel</button>
-          <button type="submit" class="btn btn-primary">Save Student</button>
-        </div>
-      </form>
-    </div>
-  </div>
-
-  <!-- Bulk Student Modal -->
-  <div class="modal-overlay" id="bulk-student-modal">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h3>Bulk Add Students</h3>
-        <button class="icon-btn" onclick="closeBulkStudentModal()">
-          <span class="material-symbols-outlined">close</span>
-        </button>
-      </div>
-      <form id="bulk-student-form">
-        <div class="form-group">
-          <label>CSV Data (ScholarID,DOB,Name)</label>
-          <p style="font-size:12px;color:gray;">Example:<br>23144004,05/11/2004,Amit Tiwari<br>23144005,10/12/2005,Ravi Kumar</p>
-          <textarea id="bulk-student-data" rows="6" required></textarea>
-        </div>
-        <div class="modal-actions">
-          <button type="button" class="btn btn-secondary" onclick="closeBulkStudentModal()">Cancel</button>
-          <button type="submit" class="btn btn-primary">Bulk Add</button>
         </div>
       </form>
     </div>

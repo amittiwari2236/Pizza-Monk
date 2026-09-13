@@ -251,26 +251,6 @@
       font-weight: 800;
     }
 
-    .quick-chip {
-      background: rgba(255, 255, 255, 0.08);
-      border: 1px solid rgba(255, 255, 255, 0.14);
-      color: #E5E7EB;
-      font-size: 11px;
-      font-weight: 500;
-      padding: 5px 10px;
-      border-radius: 20px;
-      cursor: pointer;
-      transition: all 0.2s ease;
-      font-family: inherit;
-    }
-
-    .quick-chip:hover {
-      background: rgba(255, 122, 0, 0.2);
-      border-color: #FF7A00;
-      color: #FFF;
-      transform: translateY(-1px);
-    }
-
     .forgot-link {
       color: #E11D48;
       font-weight: 600;
@@ -581,19 +561,6 @@
         <span>Create New Account</span>
       </button>
 
-      <!-- Quick Demo Login Helpers -->
-      <div style="margin-top: 14px; padding-top: 14px; border-top: 1px dashed rgba(255,255,255,0.12); text-align: center;">
-        <div style="font-size: 11px; color: rgba(255,255,255,0.5); margin-bottom: 8px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Quick Test Logins</div>
-        <div style="display: flex; flex-wrap: wrap; gap: 6px; justify-content: center;">
-          <button type="button" class="quick-chip" onclick="fillLogin('emp1', 'emp123')">👨‍🍳 Emp1: Marco</button>
-          <button type="button" class="quick-chip" onclick="fillLogin('emp2', 'emp123')">👩‍🍳 Emp2: Priya</button>
-          <button type="button" class="quick-chip" onclick="fillLogin('emp3', 'emp123')">👨‍🍳 Emp3: Vikram</button>
-          <button type="button" class="quick-chip" onclick="fillLogin('emp4', 'emp123')">🧑‍🍳 Emp4: Deepak</button>
-          <button type="button" class="quick-chip" onclick="fillLogin('admin', 'admin')">👑 Admin</button>
-          <button type="button" class="quick-chip" onclick="fillLogin('23144004', '05/11/2004')">🎓 Student</button>
-        </div>
-      </div>
-
       <!-- Footer Tags -->
       <div class="card-footer-tags">
         Pizza &nbsp;•&nbsp; Pasta &nbsp;•&nbsp; Burgers &nbsp;•&nbsp; More
@@ -618,10 +585,10 @@
           <input type="text" id="signup-name" class="input-field" placeholder="Full Name" style="padding-left: 14px;" required>
         </div>
         <div class="input-wrapper">
-          <input type="text" id="signup-id" class="input-field" placeholder="Scholar ID / Email" style="padding-left: 14px;" required>
+          <input type="text" id="signup-id" class="input-field" placeholder="Username / Email" style="padding-left: 14px;" required>
         </div>
         <div class="input-wrapper">
-          <input type="password" id="signup-pwd" class="input-field" placeholder="Password (or DOB DD/MM/YYYY)" style="padding-left: 14px;" required>
+          <input type="password" id="signup-pwd" class="input-field" placeholder="Password" style="padding-left: 14px;" required>
         </div>
 
         <button type="submit" class="login-btn-primary" style="margin-top: 6px;">
@@ -638,10 +605,10 @@
         <h3>Account Assistance</h3>
         <button class="modal-close-btn" onclick="closeForgotPasswordModal()">✕</button>
       </div>
-      <div style="font-size: 13px; color: #D1D5DB; line-height: 1.5;">
-        <p style="margin-bottom: 12px;"><strong style="color: #FFFFFF;">🎓 Student Login:</strong><br>Use your Scholar ID and default password format (Date of Birth: <code>DD/MM/YYYY</code>, e.g. <code>05/11/2004</code>).</p>
-        <p style="margin-bottom: 12px;"><strong style="color: #FFFFFF;">🍕 Visitor / Guest:</strong><br>Enter any valid email address directly to sign in instantly.</p>
-        <p><strong style="color: #FFFFFF;">🔐 Administrator:</strong><br>Contact master canteen admin at <code>admin@canteen.com</code>.</p>
+      <div style="font-size: 13px; color: #D1D5DB; line-height: 1.6;">
+        <p style="margin-bottom: 12px;"><strong style="color: #FFFFFF;">🍕 Customer Login:</strong><br>Enter your registered Username / Email and password, or click <strong>Create New Account</strong> to sign up.</p>
+        <p style="margin-bottom: 12px;"><strong style="color: #FFFFFF;">👨‍🍳 Kitchen Staff & Admins:</strong><br>Sign in using your designated staff credentials.</p>
+        <p><strong style="color: #FFFFFF;">🔑 Need Help?</strong><br>Contact your store administrator or support team for account assistance.</p>
       </div>
       <button type="button" class="login-btn-primary" onclick="closeForgotPasswordModal()" style="margin-top: 18px; padding: 10px;">
         <span>Got It</span>
@@ -654,11 +621,6 @@
     function sanitizeInput(str) {
       if (!str) return '';
       return str.trim().replace(/[<>]/g, '');
-    }
-
-    function fillLogin(id, pwd) {
-      document.getElementById('login-id').value = id;
-      document.getElementById('login-pwd').value = pwd;
     }
 
     // Toggle password masking

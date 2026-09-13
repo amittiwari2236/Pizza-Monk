@@ -775,20 +775,6 @@
   "users": [
     {
       "id": 1,
-      "user_id": "23144004",
-      "role": "student",
-      "dob": "05/11/2004",
-      "name": "Amit Tiwari"
-    },
-    {
-      "id": 2,
-      "user_id": "TCH-101",
-      "role": "staff",
-      "dob": "15/08/1980",
-      "name": "Professor Sharma"
-    },
-    {
-      "id": 3,
       "user_id": "emp1",
       "role": "kitchen",
       "dob": "emp123",

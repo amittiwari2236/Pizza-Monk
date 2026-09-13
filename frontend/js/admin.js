@@ -622,13 +622,14 @@ function printInvoice(orderId) {
   window.print();
 }
 
-// --- STUDENT MANAGEMENT ---
+// --- STUDENT MANAGEMENT (Hidden from Admin Panel) ---
 async function fetchStudents() {
+  const tbody = document.getElementById('student-table-body');
+  if (!tbody) return;
   try {
     const res = await fetch(`${API_URL}/users`);
     const users = await res.json();
     const students = users.filter(u => u.role === 'student');
-    const tbody = document.getElementById('student-table-body');
     tbody.innerHTML = '';
     
     students.forEach(student => {
@@ -653,44 +654,48 @@ async function fetchStudents() {
   }
 }
 
-// Student Modal
+// Student Modal (conditionally initialized if present)
 const studentModal = document.getElementById('student-modal');
 const studentForm = document.getElementById('student-form');
 
 function openStudentModal() {
-  studentForm.reset();
-  studentModal.classList.add('active');
+  if (studentForm && studentModal) {
+    studentForm.reset();
+    studentModal.classList.add('active');
+  }
 }
 
 function closeStudentModal() {
-  studentModal.classList.remove('active');
+  if (studentModal) studentModal.classList.remove('active');
 }
 
-studentForm.addEventListener('submit', async (e) => {
-  e.preventDefault();
-  const data = {
-    user_id: document.getElementById('student-id').value,
-    dob: document.getElementById('student-dob').value,
-    name: document.getElementById('student-name').value,
-    role: 'student'
-  };
+if (studentForm) {
+  studentForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const data = {
+      user_id: document.getElementById('student-id').value,
+      dob: document.getElementById('student-dob').value,
+      name: document.getElementById('student-name').value,
+      role: 'student'
+    };
 
-  try {
-    const res = await fetch(`${API_URL}/users`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data)
-    });
-    if(res.ok) {
-      closeStudentModal();
-      fetchStudents();
-    } else {
-      alert("Error adding student. Make sure Scholar ID is unique.");
+    try {
+      const res = await fetch(`${API_URL}/users`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      });
+      if(res.ok) {
+        closeStudentModal();
+        fetchStudents();
+      } else {
+        alert("Error adding student. Make sure Scholar ID is unique.");
+      }
+    } catch(e) {
+      console.error("Error adding student:", e);
     }
-  } catch(e) {
-    console.error("Error adding student:", e);
-  }
-});
+  });
+}
 
 async function deleteStudent(id) {
   if(!confirm("Are you sure you want to delete this student?")) return;
@@ -702,61 +707,65 @@ async function deleteStudent(id) {
   }
 }
 
-// Bulk Student Modal
+// Bulk Student Modal (conditionally initialized if present)
 const bulkStudentModal = document.getElementById('bulk-student-modal');
 const bulkStudentForm = document.getElementById('bulk-student-form');
 
 function openBulkStudentModal() {
-  bulkStudentForm.reset();
-  bulkStudentModal.classList.add('active');
+  if (bulkStudentForm && bulkStudentModal) {
+    bulkStudentForm.reset();
+    bulkStudentModal.classList.add('active');
+  }
 }
 
 function closeBulkStudentModal() {
-  bulkStudentModal.classList.remove('active');
+  if (bulkStudentModal) bulkStudentModal.classList.remove('active');
 }
 
-bulkStudentForm.addEventListener('submit', async (e) => {
-  e.preventDefault();
-  const rawData = document.getElementById('bulk-student-data').value;
-  const lines = rawData.split('\\n');
-  const users = [];
+if (bulkStudentForm) {
+  bulkStudentForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const rawData = document.getElementById('bulk-student-data').value;
+    const lines = rawData.split('\\n');
+    const users = [];
 
-  lines.forEach(line => {
-    const parts = line.split(',');
-    if(parts.length >= 2) {
-      users.push({
-        user_id: parts[0].trim(),
-        dob: parts[1].trim(),
-        name: parts[2] ? parts[2].trim() : 'Student',
-        role: 'student'
+    lines.forEach(line => {
+      const parts = line.split(',');
+      if(parts.length >= 2) {
+        users.push({
+          user_id: parts[0].trim(),
+          dob: parts[1].trim(),
+          name: parts[2] ? parts[2].trim() : 'Student',
+          role: 'student'
+        });
+      }
+    });
+
+    if(users.length === 0) {
+      alert("No valid data found. Format must be: ScholarID,DOB,Name");
+      return;
+    }
+
+    try {
+      const res = await fetch(`${API_URL}/users/bulk`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ users })
       });
+      
+      if(res.ok) {
+        const data = await res.json();
+        alert(`Successfully added ${data.count} students.`);
+        closeBulkStudentModal();
+        fetchStudents();
+      } else {
+        alert("Error adding students in bulk. Check for duplicates.");
+      }
+    } catch(e) {
+      console.error("Error bulk adding students:", e);
     }
   });
-
-  if(users.length === 0) {
-    alert("No valid data found. Format must be: ScholarID,DOB,Name");
-    return;
-  }
-
-  try {
-    const res = await fetch(`${API_URL}/users/bulk`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ users })
-    });
-    
-    if(res.ok) {
-      const data = await res.json();
-      alert(`Successfully added ${data.count} students.`);
-      closeBulkStudentModal();
-      fetchStudents();
-    } else {
-      alert("Error adding students in bulk. Check for duplicates.");
-    }
-  } catch(e) {
-    console.error("Error bulk adding students:", e);
-  }
-});
+}
 
 // --- CATEGORY MODAL & CRUD ---
 const categoryModal = document.getElementById('category-modal');
