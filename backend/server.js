@@ -13,11 +13,23 @@ let db = require('./localDb'); // default to localDb; upgraded to mysqlDb in sta
 
 const app = express();
 const server = http.createServer(app);
-const io = new Server(server, { cors: { origin: "*" } });
+const io = new Server(server, {
+  cors: {
+    origin: "*",
+    methods: ["GET", "POST"]
+  },
+  transports: ['websocket', 'polling']
+});
 
 const port = process.env.PORT || 3000;
 
-app.use(cors());
+app.use(cors({
+  origin: true,
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin']
+}));
+app.options('*', cors());
 app.use(express.json());
 
 const frontendDir = path.join(__dirname, '../frontend');
@@ -29,19 +41,19 @@ if (!fs.existsSync(uploadsDir)) {
 app.use(express.static(frontendDir));
 app.use('/uploads', express.static(uploadsDir));
 
-// Production health check for Railway
+// Production health check for Railway/Render
 app.get('/health', (req, res) => res.json({ status: 'ok', uptime: process.uptime(), time: new Date().toISOString() }));
 
 app.get('/favicon.ico', (req, res) => res.status(204).end());
 
 // Clean route mappings for direct URL access without .html
-app.get('/admin', (req, res) => res.sendFile(path.join(frontendDir, 'admin.html')));
-app.get(['/kitchen', '/kitchen.html'], (req, res) => res.sendFile(path.join(frontendDir, 'kitchen.html')));
-app.get('/login', (req, res) => res.sendFile(path.join(frontendDir, 'login.html')));
-app.get('/menu', (req, res) => res.sendFile(path.join(frontendDir, 'menu.html')));
-app.get('/cart', (req, res) => res.sendFile(path.join(frontendDir, 'cart.html')));
-app.get('/orders', (req, res) => res.sendFile(path.join(frontendDir, 'orders.html')));
-app.get('/splash', (req, res) => res.sendFile(path.join(frontendDir, 'splash.html')));
+app.get(['/admin', '/admin/', '/admin.html'], (req, res) => res.sendFile(path.join(frontendDir, 'admin.html')));
+app.get(['/kitchen', '/kitchen/', '/kitchen.html'], (req, res) => res.sendFile(path.join(frontendDir, 'kitchen.html')));
+app.get(['/login', '/login/', '/login.html'], (req, res) => res.sendFile(path.join(frontendDir, 'login.html')));
+app.get(['/menu', '/menu/', '/menu.html'], (req, res) => res.sendFile(path.join(frontendDir, 'menu.html')));
+app.get(['/cart', '/cart/', '/cart.html'], (req, res) => res.sendFile(path.join(frontendDir, 'cart.html')));
+app.get(['/orders', '/orders/', '/orders.html'], (req, res) => res.sendFile(path.join(frontendDir, 'orders.html')));
+app.get(['/splash', '/splash/', '/splash.html'], (req, res) => res.sendFile(path.join(frontendDir, 'splash.html')));
 
 
 const storage = multer.memoryStorage();
@@ -245,15 +257,14 @@ app.post('/api/login', async (req, res) => {
   const cleanId = id.trim().toLowerCase();
   const cleanPassword = password ? password.trim() : '';
 
-  const adminIdentifiers = (process.env.ADMIN_IDENTIFIERS || 'admin,admin@canteen.com')
-    .split(',')
-    .map(s => s.trim().toLowerCase())
-    .filter(Boolean);
+  const adminIdentifiers = Array.from(new Set([
+    'admin',
+    'admin@canteen.com',
+    ...(process.env.ADMIN_IDENTIFIERS ? process.env.ADMIN_IDENTIFIERS.split(',') : [])
+  ])).map(s => s.trim().toLowerCase()).filter(Boolean);
 
-  const adminPasswords = (process.env.ADMIN_PASSWORDS || 'admin,admin123')
-    .split(',')
-    .map(s => s.trim())
-    .filter(Boolean);
+  const rawAdminPasswords = process.env.ADMIN_PASSWORDS ? process.env.ADMIN_PASSWORDS.split(',') : ['admin', 'admin123', 'Admin@123'];
+  const adminPasswords = Array.from(new Set(['admin', 'admin123', 'Admin@123', ...rawAdminPasswords.map(s => s.trim())])).filter(Boolean);
 
   if (adminIdentifiers.includes(cleanId)) {
     if (adminPasswords.includes(cleanPassword)) {
@@ -551,10 +562,8 @@ app.put('/api/orders/:id/status', async (req, res) => {
 app.put('/api/orders/:id/cancel', async (req, res) => {
   try {
     const { reason, employeeName } = req.body || {};
-    if (!reason || !reason.trim()) {
-      return res.status(400).json({ error: 'Cancellation reason is required.' });
-    }
-    const fullReason = employeeName ? `${reason.trim()} (by ${employeeName})` : reason.trim();
+    const effectiveReason = (reason && reason.trim()) ? reason.trim() : 'Cancelled by user';
+    const fullReason = employeeName ? `${effectiveReason} (by ${employeeName})` : effectiveReason;
     const cancelled = await db.cancelOrder(req.params.id, fullReason);
     io.emit('refresh_orders');
     io.emit('refresh_queue');

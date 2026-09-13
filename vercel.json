@@ -14,6 +14,10 @@
       "destination": "/frontend/admin.html"
     },
     {
+      "source": "/kitchen",
+      "destination": "/frontend/kitchen.html"
+    },
+    {
       "source": "/menu",
       "destination": "/frontend/menu.html"
     },
@@ -28,6 +32,10 @@
     {
       "source": "/login",
       "destination": "/frontend/login.html"
+    },
+    {
+      "source": "/splash",
+      "destination": "/frontend/splash.html"
     },
     {
       "source": "/",

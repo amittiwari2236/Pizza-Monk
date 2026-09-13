@@ -104,12 +104,17 @@ async function seedCategories() {
 // ============================
 // ORDER ENDPOINTS
 // ============================
-async function cancelOrder(orderId) {
+async function cancelOrder(orderId, reason = 'Cancelled by user') {
   try {
     const res = await fetch(`${API_BASE}/orders/${orderId}/cancel`, {
-      method: 'PUT'
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ reason })
     });
-    if (!res.ok) throw new Error('Failed to cancel order');
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || 'Failed to cancel order');
+    }
     return await res.json();
   } catch (err) {
     console.error('Error cancelling order:', err);

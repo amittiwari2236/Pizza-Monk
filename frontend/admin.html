@@ -13,7 +13,7 @@
     const role = sessionStorage.getItem('userRole');
     const user = sessionStorage.getItem('userName');
     if (role !== 'admin' && user !== 'Admin') {
-      window.location.href = 'login.html';
+      window.location.href = 'login.html?role=admin&redirect=admin.html';
     }
   </script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -462,5 +462,6 @@
   <script src="https://cdn.socket.io/4.7.4/socket.io.min.js"></script>
   <script src="js/api.js"></script>
   <script src="js/admin.js"></script>
-<script src="https://cdn.socket.io/4.7.4/socket.io.min.js"></script><script src="js/theme.js"></script></body>
+  <script src="js/theme.js"></script>
+</body>
 </html>

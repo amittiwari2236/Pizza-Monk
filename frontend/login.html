@@ -9,8 +9,11 @@
   <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/style.css">
   <script>
-    if (!sessionStorage.getItem('splashed')) {
-      window.location.href = 'splash.html';
+    const urlParams = new URLSearchParams(window.location.search);
+    const hasRoleOrRedirect = urlParams.get('role') || urlParams.get('redirect');
+
+    if (!sessionStorage.getItem('splashed') && !hasRoleOrRedirect) {
+      window.location.href = 'splash.html' + (window.location.search || '');
     } else if (sessionStorage.getItem('userName')) {
       const role = sessionStorage.getItem('userRole');
       if (role === 'admin') {
@@ -18,7 +21,7 @@
       } else if (role === 'kitchen' || role === 'employee') {
         window.location.href = 'kitchen.html';
       } else {
-        window.location.href = 'index.html';
+        window.location.href = urlParams.get('redirect') || 'index.html';
       }
     }
   </script>
@@ -1021,6 +1024,10 @@
         selectRole('kitchen');
       } else if (requestedRole === 'admin') {
         selectRole('admin');
+        const idInput = document.getElementById('login-id');
+        const pwdInput = document.getElementById('login-pwd');
+        if (idInput && !idInput.value) idInput.value = 'admin';
+        if (pwdInput && !pwdInput.value) pwdInput.value = 'admin';
       } else {
         selectRole('customer');
       }

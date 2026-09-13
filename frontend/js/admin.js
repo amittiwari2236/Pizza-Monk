@@ -19,7 +19,7 @@ document.addEventListener('DOMContentLoaded', () => {
   fetchOrders();
   fetchMenu();
   fetchCategories();
-  fetchStudents();
+  fetchKitchenStaff();
   
   // Load canteen status
   fetchSettings();
@@ -44,11 +44,12 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  // Vercel Serverless Fallback Polling
+  // Polling Fallback for cloud environments
   setInterval(() => {
     if (!socket.connected) {
       fetchStats();
       fetchOrders();
+      fetchKitchenStaff();
       fetchSettings();
     }
   }, 5000);
@@ -209,11 +210,12 @@ function renderDashboardOrders() {
     const time = new Date(order.placed_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
     let statusClass = 'status-preparing';
     if(order.status === 'Ready' || order.status === 'Received') statusClass = 'status-ready';
+    const itemsCount = (order.order_items || order.items || []).length;
     
     tbody.innerHTML += `
       <tr>
         <td><strong>${order.id}</strong><br><small>Token: ${order.token}</small></td>
-        <td>${order.order_items.length} items</td>
+        <td>${itemsCount} items</td>
         <td>₹${order.total}</td>
         <td><span class="status-badge ${statusClass}">${order.status}</span></td>
         <td>${time}</td>
@@ -234,7 +236,8 @@ function renderLiveOrders() {
     
     let cardsHtml = '';
     columnOrders.forEach(order => {
-      const itemsHtml = order.order_items.map(i => `<li>${i.quantity}x ${i.menu_items?.name || 'Item'}</li>`).join('');
+      const items = order.order_items || order.items || [];
+      const itemsHtml = items.map(i => `<li>${i.quantity || 1}x ${i.menu_items?.name || i.name || 'Item'}</li>`).join('');
       const isCancelled = status === 'Cancelled';
       
       const assignedBadge = `
@@ -360,13 +363,17 @@ function renderCategoryTable() {
   tbody.innerHTML = '';
   
   categories.forEach(cat => {
+    const iconHtml = (cat.icon_svg && typeof cat.icon_svg === 'string' && cat.icon_svg.startsWith('data:image'))
+      ? `<img src='${cat.icon_svg}' style='width:100%; height:100%; object-fit:contain;'>`
+      : (cat.icon_svg || '🍕');
+
     tbody.innerHTML += `
       <tr>
         <td>${cat.id}</td>
         <td><strong>${cat.name}</strong></td>
         <td>
-          <div style="width: 32px; height: 32px; display: inline-block;">
-            ${cat.icon_svg.startsWith('data:image') ? `<img src='${cat.icon_svg}' style='width:100%; height:100%;'>` : cat.icon_svg}
+          <div style="width: 32px; height: 32px; display: inline-flex; align-items: center; justify-content: center; font-size: 20px;">
+            ${iconHtml}
           </div>
         </td>
         <td class="actions-cell">
@@ -592,10 +599,11 @@ function printInvoice(orderId) {
   
   const receiptDiv = document.getElementById('print-receipt');
   
-  const itemsHtml = order.order_items.map(item => `
+  const items = order.order_items || order.items || [];
+  const itemsHtml = items.map(item => `
     <tr>
-      <td>${item.quantity}x ${item.menu_items?.name || 'Item'}</td>
-      <td class="right">₹${item.price_at_time * item.quantity}</td>
+      <td>${item.quantity || 1}x ${item.menu_items?.name || item.name || 'Item'}</td>
+      <td class="right">₹${(item.price_at_time || item.price || 0) * (item.quantity || 1)}</td>
     </tr>
   `).join('');
   
@@ -620,6 +628,53 @@ function printInvoice(orderId) {
   `;
   
   window.print();
+}
+
+// --- KITCHEN DISPATCH & ALLOCATION ---
+async function fetchKitchenStaff() {
+  const container = document.getElementById('kitchen-staff-grid');
+  if (!container) return;
+  try {
+    const res = await fetch(`${API_URL}/kitchen/employees`);
+    if (!res.ok) return;
+    const staff = await res.json();
+    if (!Array.isArray(staff)) return;
+
+    container.innerHTML = '';
+    staff.forEach(emp => {
+      const activeOrdersCount = Array.isArray(emp.activeOrders) ? emp.activeOrders.length : 0;
+      let statusHtml = '<span style="background: #dcfce7; color: #15803d; font-size: 11px; padding: 3px 10px; border-radius: 999px; font-weight: 700;">🟢 AVAILABLE</span>';
+      if (emp.status === 'Busy') {
+        statusHtml = '<span style="background: #fef3c7; color: #b45309; font-size: 11px; padding: 3px 10px; border-radius: 999px; font-weight: 700;">🟡 BUSY</span>';
+      } else if (emp.status === 'Break') {
+        statusHtml = '<span style="background: #fee2e2; color: #b91c1c; font-size: 11px; padding: 3px 10px; border-radius: 999px; font-weight: 700;">🔴 BREAK</span>';
+      }
+
+      const skillsHtml = (emp.skills || []).map(s => `<span style="background: #f1f5f9; color: #334155; font-size: 11px; padding: 2px 8px; border-radius: 6px; font-weight: 600;">${s}</span>`).join(' ');
+
+      container.innerHTML += `
+        <div class="card" style="padding: 18px; border-radius: 12px; border: 1px solid var(--border-color); background: #ffffff; box-shadow: 0 2px 8px rgba(0,0,0,0.04);">
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px;">
+            <div>
+              <div style="font-weight: 700; font-size: 16px; color: #111827;">${emp.name}</div>
+              <div style="font-size: 12px; color: #6b7280; font-weight: 500;">${emp.specialization || 'Chef Station'}</div>
+            </div>
+            ${statusHtml}
+          </div>
+          <div style="margin: 10px 0; display: flex; flex-wrap: wrap; gap: 4px;">
+            ${skillsHtml}
+          </div>
+          <div style="display: flex; justify-content: space-between; font-size: 12px; margin-top: 14px; padding-top: 10px; border-top: 1px solid #f1f5f9; color: #4b5563;">
+            <div><strong>ID:</strong> ${emp.id.toUpperCase()}</div>
+            <div><strong>Active Orders:</strong> ${activeOrdersCount}</div>
+            <div><strong>Est. Load:</strong> ${emp.currentLoadMinutes || 0}m</div>
+          </div>
+        </div>
+      `;
+    });
+  } catch (err) {
+    console.error('Error fetching kitchen staff in admin:', err);
+  }
 }
 
 // --- STUDENT MANAGEMENT (Hidden from Admin Panel) ---
@@ -933,9 +988,10 @@ function updateCharts() {
   // 3. Most Popular Items
   const itemsMap = {};
   orders.forEach(o => {
-    if (o.status !== 'Cancelled' && o.order_items) {
-      o.order_items.forEach(oi => {
-        const name = oi.menu_items?.name || 'Unknown';
+    const items = o.order_items || o.items || [];
+    if (o.status !== 'Cancelled' && items.length > 0) {
+      items.forEach(oi => {
+        const name = oi.menu_items?.name || oi.name || 'Unknown';
         itemsMap[name] = (itemsMap[name] || 0) + (oi.quantity || 1);
       });
     }
@@ -977,12 +1033,14 @@ function renderLiveActivityFeed() {
       text = `Order #${order.token} is being prepared.`;
     }
 
+    const itemsCount = (order.order_items || order.items || []).length;
+
     feed.innerHTML += `
       <div class="activity-item ${statusClass}">
         <div class="activity-icon"><span class="material-symbols-outlined">${icon}</span></div>
         <div class="activity-content">
           <p>${text}</p>
-          <small>₹${order.total} • ${order.order_items ? order.order_items.length : 0} items</small>
+          <small>₹${order.total} • ${itemsCount} items</small>
         </div>
         <div class="activity-time">${time}</div>
       </div>
