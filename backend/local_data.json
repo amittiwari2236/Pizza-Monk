@@ -786,6 +786,51 @@
       "role": "staff",
       "dob": "15/08/1980",
       "name": "Professor Sharma"
+    },
+    {
+      "id": 3,
+      "user_id": "emp1",
+      "role": "kitchen",
+      "dob": "emp123",
+      "password": "emp123",
+      "name": "Chef Marco",
+      "specialization": "Pizza & Pasta Master"
+    },
+    {
+      "id": 4,
+      "user_id": "emp2",
+      "role": "kitchen",
+      "dob": "emp123",
+      "password": "emp123",
+      "name": "Chef Priya",
+      "specialization": "Burger & Grill Specialist"
+    },
+    {
+      "id": 5,
+      "user_id": "emp3",
+      "role": "kitchen",
+      "dob": "emp123",
+      "password": "emp123",
+      "name": "Chef Vikram",
+      "specialization": "Breads & Wraps Chef"
+    },
+    {
+      "id": 6,
+      "user_id": "emp4",
+      "role": "kitchen",
+      "dob": "emp123",
+      "password": "emp123",
+      "name": "Deepak",
+      "specialization": "Beverages & Fast Packing"
+    },
+    {
+      "id": 7,
+      "user_id": "kitchen",
+      "role": "kitchen",
+      "dob": "kitchen123",
+      "password": "kitchen123",
+      "name": "Kitchen Lead",
+      "specialization": "Head Chef & All-Station Dispatch"
     }
   ],
   "orders": [],

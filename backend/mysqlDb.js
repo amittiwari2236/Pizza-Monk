@@ -55,6 +55,7 @@ function mapOrder(row) {
     ...row,
     total: Number(row.total),
     placed_at: toIso(row.placed_at),
+    assigned_at: row.assigned_at ? toIso(row.assigned_at) : null,
     cancelled_at: row.cancelled_at ? toIso(row.cancelled_at) : null
   };
 }
@@ -104,6 +105,22 @@ async function init() {
 
   const schema = fs.readFileSync(path.join(__dirname, '../db/schema.sql'), 'utf8');
   await pool.query(schema);
+
+  // Auto-migrate orders table if columns do not exist
+  const migrationQueries = [
+    "ALTER TABLE orders ADD COLUMN assigned_employee VARCHAR(50) DEFAULT NULL",
+    "ALTER TABLE orders ADD COLUMN assigned_employee_name VARCHAR(100) DEFAULT NULL",
+    "ALTER TABLE orders ADD COLUMN assigned_at DATETIME(3) DEFAULT NULL",
+    "ALTER TABLE orders ADD COLUMN cancellation_reason TEXT DEFAULT NULL"
+  ];
+  for (const q of migrationQueries) {
+    try {
+      await pool.query(q);
+    } catch (e) {
+      // Column already exists or table structure up to date
+    }
+  }
+
   await seedIfEmpty();
   return pool;
 }
@@ -392,12 +409,15 @@ async function createOrder(orderData, items) {
   try {
     await conn.beginTransaction();
     await conn.query(
-      `INSERT INTO orders (id, token, status, total, placed_at, est_ready_in, people_ahead)
-       VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      `INSERT INTO orders (id, token, status, total, placed_at, est_ready_in, people_ahead, assigned_employee, assigned_employee_name, assigned_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         orderData.id, orderData.token, orderData.status, orderData.total,
         orderData.placed_at ? new Date(orderData.placed_at) : new Date(),
-        orderData.est_ready_in, orderData.people_ahead
+        orderData.est_ready_in, orderData.people_ahead,
+        orderData.assigned_employee || null,
+        orderData.assigned_employee_name || null,
+        orderData.assigned_at ? new Date(orderData.assigned_at) : (orderData.assigned_employee ? new Date() : null)
       ]
     );
     for (const it of items) {
@@ -426,13 +446,21 @@ async function updateOrderStatus(id, status, estTime) {
   return mapOrder(rows[0]);
 }
 
-async function cancelOrder(id) {
+async function assignOrder(id, employeeId, employeeName) {
+  await getPool().query(
+    'UPDATE orders SET assigned_employee = ?, assigned_employee_name = ?, assigned_at = ? WHERE id = ?',
+    [employeeId, employeeName, new Date(), id]
+  );
+  const [updated] = await getPool().query('SELECT * FROM orders WHERE id = ?', [id]);
+  return mapOrder(updated[0]);
+}
+
+async function cancelOrder(id, reason = '') {
   const [rows] = await getPool().query('SELECT status FROM orders WHERE id = ?', [id]);
   if (!rows.length) return null;
-  if (rows[0].status !== 'Pending') return mapOrder((await getPool().query('SELECT * FROM orders WHERE id = ?', [id]))[0][0]);
   await getPool().query(
-    'UPDATE orders SET status = ?, cancelled_at = ? WHERE id = ?',
-    ['Cancelled', new Date(), id]
+    'UPDATE orders SET status = ?, cancellation_reason = ?, cancelled_at = ? WHERE id = ?',
+    ['Cancelled', reason || 'Cancelled by staff/kitchen', new Date(), id]
   );
   const [updated] = await getPool().query('SELECT * FROM orders WHERE id = ?', [id]);
   return mapOrder(updated[0]);
@@ -474,6 +502,7 @@ module.exports = {
   getOrder,
   createOrder,
   updateOrderStatus,
+  assignOrder,
   cancelOrder,
   getQueueCount,
   getMaxTokenSince

@@ -36,6 +36,10 @@ CREATE TABLE IF NOT EXISTS orders (
   placed_at DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
   est_ready_in INT DEFAULT NULL,
   people_ahead INT DEFAULT NULL,
+  assigned_employee VARCHAR(50) DEFAULT NULL,
+  assigned_employee_name VARCHAR(100) DEFAULT NULL,
+  assigned_at DATETIME(3) DEFAULT NULL,
+  cancellation_reason TEXT DEFAULT NULL,
   cancelled_at DATETIME(3) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 

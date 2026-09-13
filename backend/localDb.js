@@ -257,16 +257,30 @@ class LocalDb {
     if (order) {
       order.status = status;
       if (estTime !== undefined) order.est_ready_in = estTime;
+      if (status === 'Ready') order.ready_at = new Date().toISOString();
       this.saveData();
       return order;
     }
     return null;
   }
 
-  cancelOrder(id) {
+  assignOrder(id, employeeId, employeeName) {
+    const order = this.data.orders.find(o => o.id === id);
+    if (order) {
+      order.assigned_employee = employeeId;
+      order.assigned_employee_name = employeeName;
+      order.assigned_at = new Date().toISOString();
+      this.saveData();
+      return order;
+    }
+    return null;
+  }
+
+  cancelOrder(id, reason = '') {
     const order = this.data.orders.find(o => o.id === id);
     if (order) {
       order.status = 'Cancelled';
+      order.cancellation_reason = reason || 'Cancelled by kitchen/admin';
       order.cancelled_at = new Date().toISOString();
       this.saveData();
       return order;
@@ -278,6 +292,13 @@ class LocalDb {
     return this.data.orders.filter(o => 
       ['Pending', 'Preparing', 'Almost Ready'].includes(o.status)
     ).length;
+  }
+
+  getMaxTokenSince(startOfDay) {
+    const startDate = startOfDay ? new Date(startOfDay) : new Date(0);
+    const dayOrders = this.data.orders.filter(o => new Date(o.placed_at) >= startDate);
+    if (dayOrders.length === 0) return 0;
+    return Math.max(...dayOrders.map(o => Number(o.token) || 0));
   }
 }
 

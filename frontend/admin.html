@@ -36,6 +36,10 @@
         <span class="material-symbols-outlined">receipt_long</span>
         Live Orders
       </a>
+      <a href="#" class="nav-item" data-view="kitchen">
+        <span class="material-symbols-outlined">skillet</span>
+        Kitchen Dispatch
+      </a>
       <a href="#" class="nav-item" data-view="menu">
         <span class="material-symbols-outlined">restaurant_menu</span>
         Menu Management
@@ -283,6 +287,24 @@
           <h3>Live Orders Queue</h3>
         </div>
         <div class="orders-kanban" id="orders-kanban">
+          <!-- Populated via JS -->
+        </div>
+      </section>
+
+      <!-- Kitchen Dispatch View -->
+      <section id="view-kitchen" class="view">
+        <div class="card" style="padding: 20px; margin-bottom: 24px; display: flex; justify-content: space-between; align-items: center;">
+          <div>
+            <h3 style="margin: 0; font-size: 18px;">Kitchen Dispatch & Employee Allocation</h3>
+            <p style="color: var(--text-gray); margin: 4px 0 0 0; font-size: 14px;">Live employee routing, preparation times, skill specialization, and active workload.</p>
+          </div>
+          <a href="kitchen.html" target="_blank" class="btn btn-primary" style="text-decoration: none; display: inline-flex; align-items: center; gap: 6px; padding: 10px 16px; border-radius: 8px;">
+            <span class="material-symbols-outlined" style="font-size: 18px;">open_in_new</span>
+            Open Live Kitchen KDS
+          </a>
+        </div>
+
+        <div id="kitchen-staff-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; margin-bottom: 24px;">
           <!-- Populated via JS -->
         </div>
       </section>

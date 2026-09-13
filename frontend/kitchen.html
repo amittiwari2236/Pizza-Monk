@@ -1,0 +1,948 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Pizza Monk's - Kitchen Display Station</title>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Bungee&display=swap">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
+  <link rel="stylesheet" href="css/style.css">
+  <style>
+    :root {
+      --kds-bg: #121316;
+      --kds-surface: #1B1D22;
+      --kds-surface-light: #24272F;
+      --kds-border: rgba(255, 255, 255, 0.08);
+      --kds-primary: #FF7A00;
+      --kds-primary-hover: #E66D00;
+      --kds-green: #10B981;
+      --kds-yellow: #F59E0B;
+      --kds-red: #EF4444;
+      --kds-blue: #3B82F6;
+      --kds-text: #FFFFFF;
+      --kds-text-muted: #9CA3AF;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body.kitchen-body {
+      background-color: var(--kds-bg);
+      color: var(--kds-text);
+      font-family: 'Inter', sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow-x: hidden;
+    }
+
+    /* Top KDS Navigation Bar */
+    .kds-navbar {
+      background: rgba(27, 29, 34, 0.95);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--kds-border);
+      padding: 12px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    .kds-brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .kds-logo {
+      width: 42px;
+      height: 42px;
+      border-radius: 10px;
+      background: linear-gradient(135deg, #FF7A00, #FF3D00);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 4px 12px rgba(255, 122, 0, 0.35);
+    }
+
+    .kds-logo span {
+      font-size: 24px;
+      color: #FFF;
+    }
+
+    .kds-title h1 {
+      font-size: 18px;
+      font-weight: 800;
+      letter-spacing: -0.3px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .kds-title .badge-live {
+      font-size: 11px;
+      font-weight: 700;
+      background: rgba(16, 185, 129, 0.2);
+      color: var(--kds-green);
+      border: 1px solid rgba(16, 185, 129, 0.4);
+      padding: 2px 8px;
+      border-radius: 20px;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .kds-title .badge-live::before {
+      content: '';
+      width: 6px;
+      height: 6px;
+      background: var(--kds-green);
+      border-radius: 50%;
+      animation: pulse 1.5s infinite;
+    }
+
+    @keyframes pulse {
+      0% { transform: scale(0.9); opacity: 0.8; }
+      50% { transform: scale(1.3); opacity: 1; }
+      100% { transform: scale(0.9); opacity: 0.8; }
+    }
+
+    .kds-employee-badge {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      background: var(--kds-surface-light);
+      padding: 6px 14px;
+      border-radius: 12px;
+      border: 1px solid var(--kds-border);
+    }
+
+    .emp-avatar {
+      font-size: 22px;
+      background: rgba(255, 255, 255, 0.08);
+      width: 38px;
+      height: 38px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .emp-info {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .emp-name {
+      font-size: 14px;
+      font-weight: 700;
+      color: #FFFFFF;
+    }
+
+    .emp-specialization {
+      font-size: 11px;
+      color: var(--kds-primary);
+      font-weight: 600;
+    }
+
+    .emp-status-select {
+      background: rgba(0, 0, 0, 0.3);
+      color: #FFF;
+      border: 1px solid var(--kds-border);
+      border-radius: 8px;
+      padding: 4px 8px;
+      font-size: 12px;
+      outline: none;
+      cursor: pointer;
+    }
+
+    .kds-controls {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .kds-btn-icon {
+      background: var(--kds-surface-light);
+      border: 1px solid var(--kds-border);
+      color: var(--kds-text);
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .kds-btn-icon:hover {
+      background: rgba(255, 255, 255, 0.12);
+      border-color: var(--kds-primary);
+    }
+
+    .kds-btn-icon.active {
+      color: var(--kds-primary);
+      border-color: var(--kds-primary);
+    }
+
+    .kds-btn-logout {
+      background: rgba(239, 68, 68, 0.15);
+      border: 1px solid rgba(239, 68, 68, 0.3);
+      color: #F87171;
+      padding: 8px 14px;
+      border-radius: 10px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s;
+    }
+
+    .kds-btn-logout:hover {
+      background: rgba(239, 68, 68, 0.3);
+    }
+
+    /* Station Status Bar & Metrics */
+    .kds-metrics-bar {
+      padding: 14px 20px;
+      background: var(--kds-surface);
+      border-bottom: 1px solid var(--kds-border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      overflow-x: auto;
+    }
+
+    .metric-pill {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: rgba(0, 0, 0, 0.25);
+      padding: 8px 16px;
+      border-radius: 10px;
+      border: 1px solid var(--kds-border);
+      white-space: nowrap;
+    }
+
+    .metric-pill .metric-val {
+      font-size: 18px;
+      font-weight: 800;
+      color: #FFF;
+    }
+
+    .metric-pill .metric-lbl {
+      font-size: 12px;
+      color: var(--kds-text-muted);
+      font-weight: 500;
+    }
+
+    /* Tabs Bar */
+    .kds-tabs {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 20px;
+      border-bottom: 1px solid var(--kds-border);
+      background: var(--kds-bg);
+      overflow-x: auto;
+    }
+
+    .kds-tab {
+      background: var(--kds-surface);
+      border: 1px solid var(--kds-border);
+      color: var(--kds-text-muted);
+      padding: 8px 18px;
+      border-radius: 10px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.2s;
+      white-space: nowrap;
+    }
+
+    .kds-tab:hover {
+      background: var(--kds-surface-light);
+      color: #FFF;
+    }
+
+    .kds-tab.active {
+      background: var(--kds-primary);
+      border-color: var(--kds-primary);
+      color: #FFF;
+      box-shadow: 0 4px 14px rgba(255, 122, 0, 0.35);
+    }
+
+    .kds-tab .count-badge {
+      background: rgba(0, 0, 0, 0.35);
+      font-size: 11px;
+      font-weight: 700;
+      padding: 2px 7px;
+      border-radius: 12px;
+    }
+
+    /* Main Live Orders Grid */
+    .kds-main {
+      flex: 1;
+      padding: 20px;
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(330px, 1fr));
+      gap: 20px;
+      align-content: start;
+    }
+
+    @media (max-width: 600px) {
+      .kds-main {
+        grid-template-columns: 1fr;
+        padding: 12px;
+        gap: 14px;
+      }
+      .kds-navbar {
+        padding: 10px 14px;
+      }
+    }
+
+    /* Order Card */
+    .order-card {
+      background: var(--kds-surface);
+      border: 1px solid var(--kds-border);
+      border-radius: 16px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+      transition: transform 0.2s, border-color 0.2s;
+      position: relative;
+    }
+
+    .order-card:hover {
+      transform: translateY(-2px);
+      border-color: rgba(255, 255, 255, 0.2);
+    }
+
+    /* Status Color Accents */
+    .order-card.status-Pending {
+      border-left: 5px solid var(--kds-yellow);
+    }
+
+    .order-card.status-Preparing {
+      border-left: 5px solid var(--kds-primary);
+    }
+
+    .order-card.status-Almost-Ready {
+      border-left: 5px solid var(--kds-blue);
+    }
+
+    .order-card.status-Ready {
+      border-left: 5px solid var(--kds-green);
+    }
+
+    .order-card.status-Cancelled {
+      border-left: 5px solid var(--kds-red);
+      opacity: 0.75;
+    }
+
+    /* Card Header */
+    .card-header {
+      padding: 14px 16px;
+      background: var(--kds-surface-light);
+      border-bottom: 1px solid var(--kds-border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .card-header-left {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .token-bubble {
+      background: #000;
+      color: var(--kds-primary);
+      font-size: 16px;
+      font-weight: 800;
+      padding: 6px 12px;
+      border-radius: 10px;
+      border: 1px solid rgba(255, 122, 0, 0.35);
+      letter-spacing: 0.5px;
+    }
+
+    .order-id-meta {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .order-id-meta .order-id {
+      font-size: 13px;
+      font-weight: 700;
+      color: #FFF;
+    }
+
+    .order-id-meta .placed-time {
+      font-size: 11px;
+      color: var(--kds-text-muted);
+    }
+
+    .card-header-right {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 4px;
+    }
+
+    .status-pill {
+      font-size: 11px;
+      font-weight: 700;
+      padding: 4px 10px;
+      border-radius: 20px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .status-pill.Pending {
+      background: rgba(245, 158, 11, 0.2);
+      color: #FBBF24;
+      border: 1px solid rgba(245, 158, 11, 0.4);
+    }
+
+    .status-pill.Preparing {
+      background: rgba(255, 122, 0, 0.2);
+      color: #FF8F1F;
+      border: 1px solid rgba(255, 122, 0, 0.4);
+    }
+
+    .status-pill.Almost-Ready {
+      background: rgba(59, 130, 246, 0.2);
+      color: #60A5FA;
+      border: 1px solid rgba(59, 130, 246, 0.4);
+    }
+
+    .status-pill.Ready {
+      background: rgba(16, 185, 129, 0.2);
+      color: #34D399;
+      border: 1px solid rgba(16, 185, 129, 0.4);
+    }
+
+    .status-pill.Cancelled {
+      background: rgba(239, 68, 68, 0.2);
+      color: #F87171;
+      border: 1px solid rgba(239, 68, 68, 0.4);
+    }
+
+    .timer-badge {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--kds-text-muted);
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    /* Assigned Employee Bar on Card */
+    .card-assignee-bar {
+      padding: 8px 16px;
+      background: rgba(0, 0, 0, 0.2);
+      border-bottom: 1px solid var(--kds-border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 12px;
+    }
+
+    .assignee-name {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-weight: 600;
+      color: #E5E7EB;
+    }
+
+    .assignee-reason {
+      font-size: 11px;
+      color: var(--kds-primary);
+      background: rgba(255, 122, 0, 0.1);
+      padding: 2px 8px;
+      border-radius: 6px;
+    }
+
+    /* Card Items List */
+    .card-items {
+      padding: 14px 16px;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .card-item-row {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 10px;
+      padding-bottom: 8px;
+      border-bottom: 1px dashed rgba(255, 255, 255, 0.08);
+    }
+
+    .card-item-row:last-child {
+      border-bottom: none;
+      padding-bottom: 0;
+    }
+
+    .item-left {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+    }
+
+    .item-qty {
+      background: rgba(255, 255, 255, 0.1);
+      color: #FFF;
+      font-size: 12px;
+      font-weight: 700;
+      width: 24px;
+      height: 24px;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .item-name-group {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .item-name {
+      font-size: 14px;
+      font-weight: 600;
+      color: #FFF;
+    }
+
+    .item-notes {
+      font-size: 11px;
+      color: var(--kds-yellow);
+      margin-top: 2px;
+    }
+
+    .item-type-badge {
+      font-size: 10px;
+      padding: 2px 6px;
+      border-radius: 4px;
+      background: rgba(255, 255, 255, 0.06);
+      color: var(--kds-text-muted);
+      margin-top: 2px;
+      align-self: flex-start;
+    }
+
+    /* Cancellation Reason Banner */
+    .cancellation-banner {
+      background: rgba(239, 68, 68, 0.12);
+      border: 1px solid rgba(239, 68, 68, 0.25);
+      border-radius: 8px;
+      padding: 8px 12px;
+      margin: 10px 16px;
+      font-size: 12px;
+      color: #FCA5A5;
+      display: flex;
+      align-items: flex-start;
+      gap: 6px;
+    }
+
+    /* Card Actions Footer */
+    .card-actions {
+      padding: 12px 16px;
+      background: var(--kds-surface-light);
+      border-top: 1px solid var(--kds-border);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .btn-step {
+      flex: 1;
+      padding: 12px;
+      border-radius: 10px;
+      font-size: 13px;
+      font-weight: 700;
+      border: none;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      transition: all 0.2s;
+    }
+
+    .btn-step.btn-start {
+      background: var(--kds-primary);
+      color: #FFF;
+      box-shadow: 0 4px 12px rgba(255, 122, 0, 0.3);
+    }
+    .btn-step.btn-start:hover {
+      background: var(--kds-primary-hover);
+    }
+
+    .btn-step.btn-almost {
+      background: var(--kds-blue);
+      color: #FFF;
+      box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+    }
+    .btn-step.btn-almost:hover {
+      background: #2563EB;
+    }
+
+    .btn-step.btn-ready {
+      background: var(--kds-green);
+      color: #FFF;
+      box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+    }
+    .btn-step.btn-ready:hover {
+      background: #059669;
+    }
+
+    .btn-step.btn-done {
+      background: rgba(255, 255, 255, 0.1);
+      color: var(--kds-text-muted);
+      cursor: default;
+    }
+
+    .btn-cancel {
+      background: rgba(239, 68, 68, 0.12);
+      border: 1px solid rgba(239, 68, 68, 0.25);
+      color: #F87171;
+      padding: 12px;
+      border-radius: 10px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s;
+    }
+
+    .btn-cancel:hover {
+      background: rgba(239, 68, 68, 0.25);
+    }
+
+    /* Modal for Cancellation Reason */
+    .kds-modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.75);
+      backdrop-filter: blur(6px);
+      z-index: 1000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.25s ease;
+    }
+
+    .kds-modal-overlay.open {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .kds-modal {
+      background: var(--kds-surface);
+      border: 1px solid var(--kds-border);
+      border-radius: 20px;
+      width: 100%;
+      max-width: 440px;
+      padding: 24px;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6);
+      transform: scale(0.95);
+      transition: transform 0.25s ease;
+    }
+
+    .kds-modal-overlay.open .kds-modal {
+      transform: scale(1);
+    }
+
+    .kds-modal h3 {
+      font-size: 18px;
+      font-weight: 800;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: #F87171;
+    }
+
+    .kds-modal p {
+      font-size: 13px;
+      color: var(--kds-text-muted);
+      margin-bottom: 16px;
+      line-height: 1.5;
+    }
+
+    .quick-reasons {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 14px;
+    }
+
+    .quick-reason-chip {
+      background: var(--kds-surface-light);
+      border: 1px solid var(--kds-border);
+      color: #D1D5DB;
+      font-size: 12px;
+      padding: 6px 12px;
+      border-radius: 20px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .quick-reason-chip:hover {
+      border-color: var(--kds-primary);
+      color: #FFF;
+    }
+
+    .reason-textarea {
+      width: 100%;
+      background: rgba(0, 0, 0, 0.4);
+      border: 1px solid var(--kds-border);
+      border-radius: 12px;
+      padding: 12px;
+      color: #FFF;
+      font-family: inherit;
+      font-size: 13px;
+      resize: vertical;
+      min-height: 80px;
+      outline: none;
+      margin-bottom: 18px;
+    }
+
+    .reason-textarea:focus {
+      border-color: var(--kds-primary);
+    }
+
+    .modal-actions {
+      display: flex;
+      gap: 10px;
+      justify-content: flex-end;
+    }
+
+    .btn-modal-cancel {
+      background: var(--kds-surface-light);
+      border: 1px solid var(--kds-border);
+      color: #FFF;
+      padding: 10px 18px;
+      border-radius: 10px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .btn-modal-confirm-cancel {
+      background: #DC2626;
+      border: none;
+      color: #FFF;
+      padding: 10px 18px;
+      border-radius: 10px;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    /* Empty state */
+    .empty-state {
+      grid-column: 1 / -1;
+      padding: 60px 20px;
+      text-align: center;
+      color: var(--kds-text-muted);
+    }
+
+    .empty-state span.material-symbols-outlined {
+      font-size: 64px;
+      color: rgba(255, 255, 255, 0.15);
+      margin-bottom: 16px;
+    }
+
+    .empty-state h3 {
+      font-size: 18px;
+      color: #FFF;
+      margin-bottom: 6px;
+    }
+  </style>
+</head>
+<body class="kitchen-body">
+
+  <!-- Audio Chime for New Assigned Orders -->
+  <audio id="order-sound" preload="auto">
+    <source src="https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3" type="audio/mpeg">
+  </audio>
+
+  <!-- KDS Top Navigation -->
+  <header class="kds-navbar">
+    <div class="kds-brand">
+      <div class="kds-logo">
+        <span class="material-symbols-outlined">skillet</span>
+      </div>
+      <div class="kds-title">
+        <h1>
+          Pizza Monk's Kitchen
+          <span class="badge-live">Live KDS</span>
+        </h1>
+      </div>
+    </div>
+
+    <!-- Logged in Employee Info -->
+    <div class="kds-employee-badge" id="kds-emp-badge">
+      <div class="emp-avatar" id="emp-avatar-display">👨‍🍳</div>
+      <div class="emp-info">
+        <span class="emp-name" id="emp-name-display">Chef Marco</span>
+        <span class="emp-specialization" id="emp-spec-display">Pizza & Pasta Master</span>
+      </div>
+      <select class="emp-status-select" id="emp-status-select" onchange="changeEmployeeStatus(this.value)">
+        <option value="available">🟢 Available</option>
+        <option value="busy">🟡 Busy</option>
+        <option value="offline">🔴 Offline</option>
+      </select>
+    </div>
+
+    <!-- Quick Switcher for Staff Demo / Testing -->
+    <div style="display: flex; align-items: center; gap: 8px;">
+      <label style="font-size: 11px; color: var(--kds-text-muted);">Switch Staff:</label>
+      <select id="staff-switcher" style="background: var(--kds-surface-light); color: #FFF; border: 1px solid var(--kds-border); border-radius: 8px; padding: 6px 10px; font-size: 12px; outline: none; cursor: pointer;" onchange="switchEmployeeView(this.value)">
+        <option value="emp1">Emp1: Chef Marco (Pizza & Pasta)</option>
+        <option value="emp2">Emp2: Chef Priya (Burger & Grill)</option>
+        <option value="emp3">Emp3: Chef Vikram (Breads & Wraps)</option>
+        <option value="emp4">Emp4: Deepak (Beverages & Packing)</option>
+        <option value="kitchen">Lead: All Kitchen Stations</option>
+      </select>
+    </div>
+
+    <div class="kds-controls">
+      <button class="kds-btn-icon" id="sound-toggle-btn" title="Toggle Sound Notifications" onclick="toggleSound()">
+        <span class="material-symbols-outlined" id="sound-icon">volume_up</span>
+      </button>
+      <button class="kds-btn-icon" title="Refresh Live Orders" onclick="loadKitchenOrders()">
+        <span class="material-symbols-outlined">sync</span>
+      </button>
+      <button class="kds-btn-logout" onclick="logoutKitchen()">
+        <span class="material-symbols-outlined" style="font-size: 18px;">logout</span>
+        Logout
+      </button>
+    </div>
+  </header>
+
+  <!-- Metrics Bar -->
+  <section class="kds-metrics-bar">
+    <div class="metric-pill">
+      <span class="material-symbols-outlined" style="color: var(--kds-primary);">receipt_long</span>
+      <div>
+        <div class="metric-val" id="count-assigned">0</div>
+        <div class="metric-lbl">My Assigned Orders</div>
+      </div>
+    </div>
+    <div class="metric-pill">
+      <span class="material-symbols-outlined" style="color: var(--kds-yellow);">hourglass_top</span>
+      <div>
+        <div class="metric-val" id="count-preparing">0</div>
+        <div class="metric-lbl">In Preparation</div>
+      </div>
+    </div>
+    <div class="metric-pill">
+      <span class="material-symbols-outlined" style="color: var(--kds-green);">task_alt</span>
+      <div>
+        <div class="metric-val" id="count-ready">0</div>
+        <div class="metric-lbl">Ready for Pickup</div>
+      </div>
+    </div>
+    <div class="metric-pill">
+      <span class="material-symbols-outlined" style="color: var(--kds-blue);">schedule</span>
+      <div>
+        <div class="metric-val" id="avg-prep-time">~8 min</div>
+        <div class="metric-lbl">Avg Preparation Time</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Filter Tabs -->
+  <nav class="kds-tabs">
+    <button class="kds-tab active" data-tab="assigned" onclick="setTab('assigned')">
+      <span class="material-symbols-outlined" style="font-size: 16px;">person</span>
+      My Assigned Orders
+      <span class="count-badge" id="tab-badge-assigned">0</span>
+    </button>
+    <button class="kds-tab" data-tab="all" onclick="setTab('all')">
+      <span class="material-symbols-outlined" style="font-size: 16px;">dashboard</span>
+      All Kitchen Stations
+      <span class="count-badge" id="tab-badge-all">0</span>
+    </button>
+    <button class="kds-tab" data-tab="ready" onclick="setTab('ready')">
+      <span class="material-symbols-outlined" style="font-size: 16px;">check_circle</span>
+      Ready & Handed Over
+      <span class="count-badge" id="tab-badge-ready">0</span>
+    </button>
+  </nav>
+
+  <!-- Live Orders Container -->
+  <main class="kds-main" id="orders-container">
+    <!-- Populated dynamically via JS -->
+    <div class="empty-state">
+      <span class="material-symbols-outlined">hourglass_empty</span>
+      <h3>Connecting to Kitchen Dispatch...</h3>
+      <p>Please wait while live order feed syncs.</p>
+    </div>
+  </main>
+
+  <!-- Cancellation Reason Modal -->
+  <div class="kds-modal-overlay" id="cancel-modal">
+    <div class="kds-modal">
+      <h3>
+        <span class="material-symbols-outlined">warning</span>
+        Cancel Order <span id="cancel-modal-order-id"></span>
+      </h3>
+      <p>A specific cancellation reason is required by management for transparency and audit.</p>
+      
+      <div class="quick-reasons">
+        <span class="quick-reason-chip" onclick="setQuickReason('Ingredient Out of Stock')">Ingredient Out of Stock</span>
+        <span class="quick-reason-chip" onclick="setQuickReason('Oven / Grill Maintenance')">Oven Maintenance</span>
+        <span class="quick-reason-chip" onclick="setQuickReason('Customer Requested Cancellation')">Customer Request</span>
+        <span class="quick-reason-chip" onclick="setQuickReason('Duplicate Order Placed')">Duplicate Order</span>
+      </div>
+
+      <textarea id="cancel-reason-input" class="reason-textarea" placeholder="Type specific reason for cancellation here..." required></textarea>
+
+      <div class="modal-actions">
+        <button class="btn-modal-cancel" onclick="closeCancelModal()">Keep Order</button>
+        <button class="btn-modal-confirm-cancel" id="btn-confirm-cancel" onclick="submitOrderCancellation()">Confirm Cancellation</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="js/kitchen.js"></script>
+</body>
+</html>

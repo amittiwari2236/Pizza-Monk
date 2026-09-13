@@ -7,6 +7,8 @@ const http = require('http');
 const { Server } = require('socket.io');
 require('dotenv').config({ path: path.join(__dirname, '.env') });
 
+const kitchenDispatch = require('./kitchenDispatch');
+
 let db = require('./localDb'); // default to localDb; upgraded to mysqlDb in start() if available
 
 const app = express();
@@ -34,6 +36,7 @@ app.get('/favicon.ico', (req, res) => res.status(204).end());
 
 // Clean route mappings for direct URL access without .html
 app.get('/admin', (req, res) => res.sendFile(path.join(frontendDir, 'admin.html')));
+app.get(['/kitchen', '/kitchen.html'], (req, res) => res.sendFile(path.join(frontendDir, 'kitchen.html')));
 app.get('/login', (req, res) => res.sendFile(path.join(frontendDir, 'login.html')));
 app.get('/menu', (req, res) => res.sendFile(path.join(frontendDir, 'menu.html')));
 app.get('/cart', (req, res) => res.sendFile(path.join(frontendDir, 'cart.html')));
@@ -297,11 +300,41 @@ app.post('/api/login', async (req, res) => {
     return res.status(401).json({ error: 'Incorrect admin password' });
   }
 
+  // Check kitchen staff credentials
+  const kitchenStaff = kitchenDispatch.getEmployeeById(cleanId);
+  if (kitchenStaff) {
+    const validKitchenPwd = cleanId === 'kitchen' ? 'kitchen123' : 'emp123';
+    let isMatch = (cleanPassword === validKitchenPwd);
+    try {
+      const dbUser = await db.getUserById(id.trim());
+      if (dbUser && (dbUser.password === cleanPassword || dbUser.dob === cleanPassword)) {
+        isMatch = true;
+      }
+    } catch (e) {}
+
+    if (isMatch) {
+      return res.json({
+        success: true,
+        role: 'kitchen',
+        employeeId: kitchenStaff.id,
+        userName: kitchenStaff.name,
+        specialization: kitchenStaff.specialization
+      });
+    }
+    return res.status(401).json({ error: 'Incorrect kitchen credentials' });
+  }
+
   try {
     const user = await db.getUserById(id.trim());
     if (user) {
       if (user.dob === password || (user.password && user.password === password)) {
-        return res.json({ success: true, role: user.role, userName: user.name });
+        return res.json({
+          success: true,
+          role: user.role,
+          userName: user.name,
+          employeeId: user.user_id,
+          specialization: user.specialization || null
+        });
       }
       return res.status(401).json({ error: 'Incorrect credentials' });
     }
@@ -425,14 +458,23 @@ async function handleCreateOrder(req, res) {
     const orderId = `ORD${Date.now().toString().slice(-6)}`;
     const peopleAhead = await db.getQueueCount();
     const token = await getNextToken();
+
+    // Intelligent Kitchen Allocation
+    const allLiveOrders = await db.getOrders(getStartOfDay());
+    const allocation = kitchenDispatch.allocateOrder({ items }, allLiveOrders);
+    const estTime = allocation.prepEstimateMinutes || (peopleAhead === 0 ? 5 : peopleAhead * 3);
+
     const newOrderData = {
       id: orderId,
       token,
       status: 'Pending',
       total,
       placed_at: new Date().toISOString(),
-      est_ready_in: peopleAhead === 0 ? 5 : peopleAhead * 3,
+      est_ready_in: estTime,
       people_ahead: peopleAhead,
+      assigned_employee: allocation.employeeId,
+      assigned_employee_name: allocation.employeeName,
+      assigned_at: new Date().toISOString(),
       payment_status: (payment && payment.status) || 'PAID',
       payment_method: (payment && payment.method) || 'UPI',
       transaction_id: (payment && payment.transactionId) || `TXN_${Date.now()}`
@@ -442,6 +484,19 @@ async function handleCreateOrder(req, res) {
 
     io.emit('refresh_orders');
     io.emit('refresh_queue');
+    io.emit('refresh_kitchen_orders');
+    io.emit('order_assigned', {
+      orderId: newOrderData.id,
+      token: newOrderData.token,
+      employeeId: allocation.employeeId,
+      employeeName: allocation.employeeName,
+      specialization: allocation.specialization,
+      items,
+      total: newOrderData.total,
+      placedAt: newOrderData.placed_at,
+      status: newOrderData.status,
+      reasons: allocation.reasons
+    });
 
     return res.json({
       id: newOrderData.id,
@@ -451,6 +506,10 @@ async function handleCreateOrder(req, res) {
       placedAt: newOrderData.placed_at,
       estReadyIn: newOrderData.est_ready_in,
       peopleAhead: newOrderData.people_ahead,
+      assigned_employee: newOrderData.assigned_employee,
+      assigned_employee_name: newOrderData.assigned_employee_name,
+      assigned_at: newOrderData.assigned_at,
+      allocation_reasons: allocation.reasons,
       paymentStatus: newOrderData.payment_status,
       paymentMethod: newOrderData.payment_method,
       transactionId: newOrderData.transaction_id,
@@ -498,6 +557,10 @@ app.get('/api/orders/:id', async (req, res) => {
       placedAt: localOrder.placed_at,
       estReadyIn: localOrder.est_ready_in,
       peopleAhead: localOrder.people_ahead,
+      assigned_employee: localOrder.assigned_employee,
+      assigned_employee_name: localOrder.assigned_employee_name,
+      assigned_at: localOrder.assigned_at,
+      cancellation_reason: localOrder.cancellation_reason || null,
       paymentStatus: localOrder.payment_status || 'PAID',
       paymentMethod: localOrder.payment_method || 'UPI',
       transactionId: localOrder.transaction_id || null,
@@ -515,6 +578,8 @@ app.put('/api/orders/:id/status', async (req, res) => {
     const updated = await db.updateOrderStatus(id, status, estTime);
     io.emit('refresh_orders');
     io.emit('refresh_queue');
+    io.emit('refresh_kitchen_orders');
+    io.emit('order_status_updated', { id, status, estTime });
     res.json(updated || { id, status });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -523,10 +588,123 @@ app.put('/api/orders/:id/status', async (req, res) => {
 
 app.put('/api/orders/:id/cancel', async (req, res) => {
   try {
-    const cancelled = await db.cancelOrder(req.params.id);
+    const { reason, employeeName } = req.body || {};
+    if (!reason || !reason.trim()) {
+      return res.status(400).json({ error: 'Cancellation reason is required.' });
+    }
+    const fullReason = employeeName ? `${reason.trim()} (by ${employeeName})` : reason.trim();
+    const cancelled = await db.cancelOrder(req.params.id, fullReason);
     io.emit('refresh_orders');
     io.emit('refresh_queue');
-    res.json(cancelled || { id: req.params.id, status: 'Cancelled' });
+    io.emit('refresh_kitchen_orders');
+    io.emit('order_status_updated', { id: req.params.id, status: 'Cancelled', reason: fullReason });
+    res.json(cancelled || { id: req.params.id, status: 'Cancelled', cancellation_reason: fullReason });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Kitchen Specific Endpoints
+app.get('/api/kitchen/employees', async (req, res) => {
+  try {
+    const allLiveOrders = await db.getOrders(getStartOfDay());
+    const employees = kitchenDispatch.getEmployees(allLiveOrders);
+    res.json(employees);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.put('/api/kitchen/employees/:id/status', (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status } = req.body;
+    const emp = kitchenDispatch.setEmployeeStatus(id, status);
+    if (!emp) return res.status(404).json({ error: 'Employee not found' });
+    io.emit('refresh_kitchen_staff');
+    res.json({ success: true, employee: emp });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.get('/api/kitchen/orders', async (req, res) => {
+  try {
+    const { employeeId } = req.query;
+    const allOrders = await db.getOrders(getStartOfDay());
+    let kitchenOrders = allOrders.filter(o => 
+      ['Pending', 'Preparing', 'Almost Ready', 'Ready'].includes(o.status)
+    );
+    if (employeeId && employeeId.toLowerCase() !== 'kitchen' && employeeId.toLowerCase() !== 'all') {
+      kitchenOrders = kitchenOrders.filter(o => o.assigned_employee === employeeId);
+    }
+    res.json(kitchenOrders);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.put('/api/kitchen/orders/:id/status', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status, estTime } = req.body;
+    const updated = await db.updateOrderStatus(id, status, estTime);
+    io.emit('refresh_orders');
+    io.emit('refresh_queue');
+    io.emit('refresh_kitchen_orders');
+    io.emit('order_status_updated', { id, status, estTime });
+    res.json(updated || { id, status });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/kitchen/orders/:id/cancel', async (req, res) => {
+  try {
+    const { reason, employeeId, employeeName } = req.body || {};
+    if (!reason || !reason.trim()) {
+      return res.status(400).json({ error: 'Cancellation reason is required' });
+    }
+    const fullReason = employeeName ? `${reason.trim()} (Cancelled by ${employeeName})` : reason.trim();
+    const cancelled = await db.cancelOrder(req.params.id, fullReason);
+    io.emit('refresh_orders');
+    io.emit('refresh_queue');
+    io.emit('refresh_kitchen_orders');
+    io.emit('order_status_updated', { id: req.params.id, status: 'Cancelled', reason: fullReason });
+    res.json(cancelled || { id: req.params.id, status: 'Cancelled', cancellation_reason: fullReason });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.put('/api/kitchen/orders/:id/reassign', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { employeeId } = req.body;
+    const targetEmp = kitchenDispatch.getEmployeeById(employeeId);
+    if (!targetEmp) return res.status(400).json({ error: 'Invalid employee target' });
+
+    let updated = null;
+    if (db.assignOrder) {
+      updated = await db.assignOrder(id, targetEmp.id, targetEmp.name);
+    } else {
+      const order = await db.getOrder(id);
+      if (order) {
+        order.assigned_employee = targetEmp.id;
+        order.assigned_employee_name = targetEmp.name;
+        updated = order;
+      }
+    }
+
+    io.emit('refresh_orders');
+    io.emit('refresh_kitchen_orders');
+    io.emit('order_assigned', {
+      orderId: id,
+      employeeId: targetEmp.id,
+      employeeName: targetEmp.name
+    });
+
+    res.json({ success: true, order: updated });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

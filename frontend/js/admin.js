@@ -26,7 +26,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Setup socket listeners
   socket.on('refresh_queue', fetchStats);
-  socket.on('refresh_orders', fetchOrders);
+  socket.on('refresh_orders', () => { fetchOrders(); fetchKitchenStaff(); });
+  socket.on('refresh_kitchen_staff', fetchKitchenStaff);
+  socket.on('order_assigned', () => { fetchOrders(); fetchKitchenStaff(); });
+  socket.on('order_status_updated', () => { fetchOrders(); fetchKitchenStaff(); });
   socket.on('refresh_menu', fetchMenu);
   socket.on('refresh_categories', fetchCategories);
   socket.on('refresh_status', (settings) => updateAdminStatusIndicator(settings.canteenStatus));
@@ -100,6 +103,7 @@ async function fetchOrders() {
     
     // Update legacy views
     renderLiveOrders();
+    fetchKitchenStaff();
   } catch (err) {
     console.error('Error fetching orders:', err);
   }
@@ -188,8 +192,6 @@ window.updateTheme = async function(themeName) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ theme: themeName })
     });
-    // The socket event will trigger the local update via theme.js if included, 
-    // or we could manually refresh settings if we tracked it in the UI.
   } catch(err) {
     console.error(err);
     alert('Failed to update theme.');
@@ -199,6 +201,7 @@ window.updateTheme = async function(themeName) {
 // --- RENDERING ---
 function renderDashboardOrders() {
   const tbody = document.getElementById('dash-orders-table');
+  if (!tbody) return;
   tbody.innerHTML = '';
   
   const recent = orders.slice(0, 5); // top 5
@@ -221,6 +224,7 @@ function renderDashboardOrders() {
 
 function renderLiveOrders() {
   const kanban = document.getElementById('orders-kanban');
+  if (!kanban) return;
   kanban.innerHTML = '';
   
   const statuses = ['Pending', 'Preparing', 'Almost Ready', 'Ready', 'Cancelled'];
@@ -233,24 +237,39 @@ function renderLiveOrders() {
       const itemsHtml = order.order_items.map(i => `<li>${i.quantity}x ${i.menu_items?.name || 'Item'}</li>`).join('');
       const isCancelled = status === 'Cancelled';
       
+      const assignedBadge = `
+        <div style="font-size: 11px; margin: 6px 0; padding: 4px 8px; background: #fff7ed; border: 1px solid #fed7aa; border-radius: 6px; color: #c2410c; font-weight: 600; display: flex; align-items: center; gap: 4px;">
+          <span>👨‍🍳</span> Chef: <strong>${order.assigned_employee_name || order.assigned_employee || 'Auto-Routing'}</strong>
+        </div>
+      `;
+
+      const cancellationHtml = (isCancelled && order.cancellation_reason) ? `
+        <div style="font-size: 11px; margin: 4px 0; padding: 4px 8px; background: #fee2e2; border: 1px solid #fecaca; border-radius: 6px; color: #b91c1c; font-weight: 500;">
+          <strong>Reason:</strong> ${order.cancellation_reason}
+        </div>
+      ` : '';
+
       cardsHtml += `
-        <div class="order-card" style="${isCancelled ? 'opacity: 0.5; text-decoration: line-through;' : ''}">
+        <div class="order-card" style="${isCancelled ? 'opacity: 0.85; border-left: 4px solid #ef4444;' : ''}">
           <div class="order-card-header">
             <span>Token: ${order.token}</span>
             <span>₹${order.total}</span>
           </div>
           <small>${order.id}</small>
+          ${assignedBadge}
           <ul class="order-items-list">
             ${itemsHtml}
           </ul>
+          ${cancellationHtml}
             <div class="order-actions">
-              ${isCancelled ? '<span style="color:red; font-weight:bold;">CANCELLED</span>' : `
+              ${isCancelled ? '<span style="color:red; font-weight:bold; font-size:12px;">CANCELLED</span>' : `
               <select onchange="updateOrderStatus('${order.id}', this.value)">
                 <option value="Pending" ${status === 'Pending' ? 'selected' : ''}>Pending</option>
                 <option value="Preparing" ${status === 'Preparing' ? 'selected' : ''}>Preparing</option>
                 <option value="Almost Ready" ${status === 'Almost Ready' ? 'selected' : ''}>Almost Ready</option>
                 <option value="Ready" ${status === 'Ready' ? 'selected' : ''}>Ready</option>
                 <option value="Received" ${status === 'Received' ? 'selected' : ''}>Completed (Received)</option>
+                <option value="Cancelled">Cancel Order</option>
               </select>`}
               <button onclick="printInvoice('${order.id}')" style="padding: 0.3rem; border: none; background: #eee; border-radius: 4px; cursor: pointer;">Print</button>
               ${!isCancelled && status !== 'Ready' && status !== 'Received' ? `<button onclick="updateEstTime('${order.id}')" style="padding: 0.3rem; border: none; background: #00b020; color: white; border-radius: 4px; cursor: pointer;">Set Time</button>` : ''}
@@ -385,6 +404,23 @@ async function updateOrderStatus(orderId, newStatus) {
   try {
     const payload = { status: newStatus };
     
+    // If Admin cancels, require mandatory cancellation reason!
+    if (newStatus === 'Cancelled') {
+      const reason = prompt("Enter mandatory cancellation reason:");
+      if (!reason || !reason.trim()) {
+        alert("Cancellation reason is mandatory.");
+        fetchOrders();
+        return;
+      }
+      await fetch(`${API_URL}/orders/${orderId}/cancel`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ reason: reason.trim(), employeeName: 'Admin' })
+      });
+      fetchOrders();
+      return;
+    }
+
     // Automatically prompt for estimated time if moving to Preparing
     if (newStatus === 'Preparing') {
       const time = prompt("Enter estimated preparation time in minutes (e.g., 8):", "10");
@@ -402,6 +438,54 @@ async function updateOrderStatus(orderId, newStatus) {
   } catch (err) {
     console.error('Error updating status:', err);
     alert('Failed to update status');
+  }
+}
+
+async function fetchKitchenStaff() {
+  const container = document.getElementById('kitchen-staff-grid');
+  if (!container) return;
+  try {
+    const res = await fetch('/api/kitchen/employees');
+    if (!res.ok) return;
+    const employees = await res.json();
+    
+    container.innerHTML = employees.map(emp => {
+      let statusColor = '#10b981';
+      if (emp.status === 'busy') statusColor = '#f59e0b';
+      if (emp.status === 'offline') statusColor = '#ef4444';
+
+      return `
+        <div style="background: white; border: 1px solid #e2e8f0; border-radius: 12px; padding: 18px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); display: flex; flex-direction: column; gap: 10px;">
+          <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <div style="font-size: 26px; width: 44px; height: 44px; background: #f8fafc; border-radius: 10px; display: flex; align-items: center; justify-content: center; border: 1px solid #e2e8f0;">
+                ${emp.avatar || '👨‍🍳'}
+              </div>
+              <div>
+                <h4 style="margin: 0; font-size: 15px; font-weight: 700;">${emp.name}</h4>
+                <div style="font-size: 12px; color: #ff7a00; font-weight: 600;">${emp.specialization}</div>
+              </div>
+            </div>
+            <span style="font-size: 11px; font-weight: 700; color: ${statusColor}; background: ${statusColor}15; border: 1px solid ${statusColor}40; padding: 2px 8px; border-radius: 12px; text-transform: capitalize;">
+              ${emp.status}
+            </span>
+          </div>
+
+          <div style="font-size: 12px; color: #64748b;">
+            <strong>Skills:</strong> ${(emp.skills || []).join(', ')}
+          </div>
+
+          <div style="display: flex; justify-content: space-between; align-items: center; padding-top: 8px; border-top: 1px solid #f1f5f9;">
+            <span style="font-size: 12px; color: #64748b;">Active Queue:</span>
+            <span style="font-size: 14px; font-weight: 800; color: ${emp.activeOrdersCount > 2 ? '#ef4444' : '#10b981'};">
+              ${emp.activeOrdersCount || 0} orders
+            </span>
+          </div>
+        </div>
+      `;
+    }).join('');
+  } catch (err) {
+    console.error('Error fetching kitchen staff:', err);
   }
 }
 

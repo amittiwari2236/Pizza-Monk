@@ -232,24 +232,22 @@
               </div>
             </div>
 
-            ${order.status === 'Ready' || order.status === 'Received' || order.status === 'Cancelled' || isPacketOnly ? '' : `
-            <div class="box-card" style="padding: 16px; background: white; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); text-align: center; margin-top: 4px;">
-              <div style="display: flex; justify-content: space-between; align-items: center;">
-                <div style="flex: 1; border-right: 1px solid #eee;">
-                  <div style="font-size: 11px; color: var(--text-gray); margin-bottom: 4px; font-weight: 500;">Current Queue</div>
-                  <div style="font-size: 24px; font-weight: 700; color: #111;">
-                    <span id="current-queue-count">--</span> <span style="font-size: 11px; font-weight: 500; color: #999;">people</span>
-                  </div>
-                </div>
-                <div style="flex: 1;">
-                  <div style="font-size: 11px; color: var(--text-gray); margin-bottom: 4px; font-weight: 500;">Est. Wait Time</div>
-                  <div style="font-size: 24px; font-weight: 700; color: #111;">
-                    ~<span id="est-wait-time">${order.estReadyIn}</span> <span style="font-size: 11px; font-weight: 500; color: #999;">min</span>
-                  </div>
-                </div>
+            ${(order.assigned_employee_name || order.assigned_employee) ? `
+            <div class="box-card" style="padding: 12px 16px; background: #FFF7ED; border: 1px solid #FFEDD5; border-radius: 12px; margin-top: 6px; display: flex; align-items: center; gap: 10px;">
+              <span style="font-size: 22px;">👨‍🍳</span>
+              <div>
+                <div style="font-size: 11px; color: #9A3412; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Assigned Kitchen Station</div>
+                <div style="font-size: 14px; font-weight: 700; color: #C2410C;">${order.assigned_employee_name || order.assigned_employee}</div>
               </div>
             </div>
-            `}
+            ` : ''}
+
+            ${(order.status === 'Cancelled' && order.cancellation_reason) ? `
+            <div class="box-card" style="padding: 12px 16px; background: #FEF2F2; border: 1px solid #FEE2E2; border-radius: 12px; margin-top: 6px;">
+              <div style="font-size: 11px; color: #991B1B; font-weight: 700; text-transform: uppercase; margin-bottom: 2px;">Order Cancelled</div>
+              <div style="font-size: 13px; color: #DC2626; font-weight: 500;">Reason: ${order.cancellation_reason}</div>
+            </div>
+            ` : ''}
           </div>
 
           <div class="box-card order-summary-accordion">

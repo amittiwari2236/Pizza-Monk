@@ -251,6 +251,26 @@
       font-weight: 800;
     }
 
+    .quick-chip {
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      color: #E5E7EB;
+      font-size: 11px;
+      font-weight: 500;
+      padding: 5px 10px;
+      border-radius: 20px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      font-family: inherit;
+    }
+
+    .quick-chip:hover {
+      background: rgba(255, 122, 0, 0.2);
+      border-color: #FF7A00;
+      color: #FFF;
+      transform: translateY(-1px);
+    }
+
     .forgot-link {
       color: #E11D48;
       font-weight: 600;
@@ -561,6 +581,19 @@
         <span>Create New Account</span>
       </button>
 
+      <!-- Quick Demo Login Helpers -->
+      <div style="margin-top: 14px; padding-top: 14px; border-top: 1px dashed rgba(255,255,255,0.12); text-align: center;">
+        <div style="font-size: 11px; color: rgba(255,255,255,0.5); margin-bottom: 8px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Quick Test Logins</div>
+        <div style="display: flex; flex-wrap: wrap; gap: 6px; justify-content: center;">
+          <button type="button" class="quick-chip" onclick="fillLogin('emp1', 'emp123')">👨‍🍳 Emp1: Marco</button>
+          <button type="button" class="quick-chip" onclick="fillLogin('emp2', 'emp123')">👩‍🍳 Emp2: Priya</button>
+          <button type="button" class="quick-chip" onclick="fillLogin('emp3', 'emp123')">👨‍🍳 Emp3: Vikram</button>
+          <button type="button" class="quick-chip" onclick="fillLogin('emp4', 'emp123')">🧑‍🍳 Emp4: Deepak</button>
+          <button type="button" class="quick-chip" onclick="fillLogin('admin', 'admin')">👑 Admin</button>
+          <button type="button" class="quick-chip" onclick="fillLogin('23144004', '05/11/2004')">🎓 Student</button>
+        </div>
+      </div>
+
       <!-- Footer Tags -->
       <div class="card-footer-tags">
         Pizza &nbsp;•&nbsp; Pasta &nbsp;•&nbsp; Burgers &nbsp;•&nbsp; More
@@ -621,6 +654,11 @@
     function sanitizeInput(str) {
       if (!str) return '';
       return str.trim().replace(/[<>]/g, '');
+    }
+
+    function fillLogin(id, pwd) {
+      document.getElementById('login-id').value = id;
+      document.getElementById('login-pwd').value = pwd;
     }
 
     // Toggle password masking
@@ -704,11 +742,15 @@
           // Secure Session Management
           sessionStorage.setItem('userName', data.userName);
           sessionStorage.setItem('userRole', data.role);
+          if (data.employeeId) sessionStorage.setItem('employeeId', data.employeeId);
+          if (data.specialization) sessionStorage.setItem('specialization', data.specialization);
           sessionStorage.setItem('authTime', Date.now().toString());
 
           // Role-based authorization redirect
           if (data.role === 'admin') {
             window.location.href = 'admin.html';
+          } else if (data.role === 'kitchen' || data.role === 'employee') {
+            window.location.href = 'kitchen.html';
           } else {
             const redirectTarget = new URLSearchParams(window.location.search).get('redirect') || 'index.html';
             window.location.href = redirectTarget;
