@@ -113,6 +113,15 @@ function selectCategory(categoryName) {
   });
 
   applyFilters();
+
+  if (categoryName !== 'All') {
+    setTimeout(() => {
+      const section = document.getElementById('filtered-results-section');
+      if (section) {
+        section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }, 60);
+  }
 }
 
 /**
@@ -701,6 +710,9 @@ function clearAllFilters() {
   });
 
   applyFilters();
+  setTimeout(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, 50);
 }
 
 /**
