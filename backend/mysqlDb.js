@@ -56,6 +56,15 @@ function mapOrder(row) {
     total: Number(row.total),
     placed_at: toIso(row.placed_at),
     assigned_at: row.assigned_at ? toIso(row.assigned_at) : null,
+    started_preparing_at: row.started_preparing_at ? toIso(row.started_preparing_at) : null,
+    ready_at: row.ready_at ? toIso(row.ready_at) : null,
+    estimated_ready_at: row.estimated_ready_at ? toIso(row.estimated_ready_at) : null,
+    actual_prep_minutes: row.actual_prep_minutes !== null && row.actual_prep_minutes !== undefined ? Number(row.actual_prep_minutes) : null,
+    safety_buffer_minutes: row.safety_buffer_minutes !== null && row.safety_buffer_minutes !== undefined ? Number(row.safety_buffer_minutes) : 5.0,
+    is_delayed: Boolean(row.is_delayed),
+    delay_minutes: Number(row.delay_minutes) || 0,
+    feedback_submitted: Boolean(row.feedback_submitted),
+    feedback_rating: Number(row.feedback_rating) || null,
     cancelled_at: row.cancelled_at ? toIso(row.cancelled_at) : null
   };
 }
@@ -111,7 +120,27 @@ async function init() {
     "ALTER TABLE orders ADD COLUMN assigned_employee VARCHAR(50) DEFAULT NULL",
     "ALTER TABLE orders ADD COLUMN assigned_employee_name VARCHAR(100) DEFAULT NULL",
     "ALTER TABLE orders ADD COLUMN assigned_at DATETIME(3) DEFAULT NULL",
-    "ALTER TABLE orders ADD COLUMN cancellation_reason TEXT DEFAULT NULL"
+    "ALTER TABLE orders ADD COLUMN cancellation_reason TEXT DEFAULT NULL",
+    "ALTER TABLE orders ADD COLUMN started_preparing_at DATETIME(3) DEFAULT NULL",
+    "ALTER TABLE orders ADD COLUMN ready_at DATETIME(3) DEFAULT NULL",
+    "ALTER TABLE orders ADD COLUMN actual_prep_minutes DECIMAL(6, 2) DEFAULT NULL",
+    "ALTER TABLE orders ADD COLUMN estimated_ready_at DATETIME(3) DEFAULT NULL",
+    "ALTER TABLE orders ADD COLUMN safety_buffer_minutes DECIMAL(5, 2) DEFAULT 5.0",
+    "ALTER TABLE orders ADD COLUMN is_delayed TINYINT(1) DEFAULT 0",
+    "ALTER TABLE orders ADD COLUMN delay_minutes INT DEFAULT 0",
+    "ALTER TABLE orders ADD COLUMN feedback_submitted TINYINT(1) DEFAULT 0",
+    "ALTER TABLE orders ADD COLUMN feedback_rating INT DEFAULT NULL",
+    `CREATE TABLE IF NOT EXISTS order_feedback (
+      id VARCHAR(50) PRIMARY KEY,
+      order_id VARCHAR(50) NOT NULL,
+      user_id VARCHAR(255) DEFAULT NULL,
+      user_name VARCHAR(255) DEFAULT NULL,
+      rating INT NOT NULL,
+      comment TEXT DEFAULT NULL,
+      tags TEXT DEFAULT NULL,
+      assigned_employee VARCHAR(50) DEFAULT NULL,
+      created_at DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`
   ];
   for (const q of migrationQueries) {
     try {
@@ -409,21 +438,29 @@ async function createOrder(orderData, items) {
   try {
     await conn.beginTransaction();
     await conn.query(
-      `INSERT INTO orders (id, token, status, total, placed_at, est_ready_in, people_ahead, assigned_employee, assigned_employee_name, assigned_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      `INSERT INTO orders (id, token, status, total, placed_at, est_ready_in, people_ahead, assigned_employee, assigned_employee_name, assigned_at, started_preparing_at, ready_at, estimated_ready_at, safety_buffer_minutes, is_delayed, delay_minutes)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         orderData.id, orderData.token, orderData.status, orderData.total,
         orderData.placed_at ? new Date(orderData.placed_at) : new Date(),
         orderData.est_ready_in, orderData.people_ahead,
         orderData.assigned_employee || null,
         orderData.assigned_employee_name || null,
-        orderData.assigned_at ? new Date(orderData.assigned_at) : (orderData.assigned_employee ? new Date() : null)
+        orderData.assigned_at ? new Date(orderData.assigned_at) : (orderData.assigned_employee ? new Date() : null),
+        orderData.started_preparing_at ? new Date(orderData.started_preparing_at) : null,
+        orderData.ready_at ? new Date(orderData.ready_at) : null,
+        orderData.estimated_ready_at ? new Date(orderData.estimated_ready_at) : null,
+        orderData.safety_buffer_minutes !== undefined ? orderData.safety_buffer_minutes : 5.0,
+        orderData.is_delayed ? 1 : 0,
+        orderData.delay_minutes || 0
       ]
     );
     for (const it of items) {
+      const parsedId = parseInt(it.id, 10);
+      const safeItemId = (!isNaN(parsedId) && parsedId > 0) ? parsedId : 1;
       await conn.query(
         'INSERT INTO order_items (order_id, item_id, quantity, price_at_time, notes) VALUES (?, ?, ?, ?, ?)',
-        [orderData.id, it.id, it.quantity, it.price, it.notes || '']
+        [orderData.id, safeItemId, it.quantity || 1, it.price || 0, it.notes || '']
       );
     }
     await conn.commit();
@@ -437,13 +474,170 @@ async function createOrder(orderData, items) {
 }
 
 async function updateOrderStatus(id, status, estTime) {
-  if (estTime !== undefined) {
-    await getPool().query('UPDATE orders SET status = ?, est_ready_in = ? WHERE id = ?', [status, estTime, id]);
+  const now = new Date();
+  if (status === 'Preparing') {
+    if (estTime !== undefined) {
+      await getPool().query(
+        'UPDATE orders SET status = ?, est_ready_in = ?, started_preparing_at = COALESCE(started_preparing_at, ?) WHERE id = ?',
+        [status, estTime, now, id]
+      );
+    } else {
+      await getPool().query(
+        'UPDATE orders SET status = ?, started_preparing_at = COALESCE(started_preparing_at, ?) WHERE id = ?',
+        [status, now, id]
+      );
+    }
+  } else if (status === 'Ready' || status === 'Received') {
+    const [existing] = await getPool().query('SELECT placed_at, started_preparing_at FROM orders WHERE id = ?', [id]);
+    let actualMins = null;
+    if (existing && existing.length) {
+      const start = existing[0].started_preparing_at || existing[0].placed_at;
+      if (start) {
+        actualMins = Math.max(1, parseFloat(((now.getTime() - new Date(start).getTime()) / 60000).toFixed(1)));
+      }
+    }
+    await getPool().query(
+      'UPDATE orders SET status = ?, ready_at = COALESCE(ready_at, ?), actual_prep_minutes = COALESCE(actual_prep_minutes, ?), is_delayed = 0, delay_minutes = 0 WHERE id = ?',
+      [status, now, actualMins, id]
+    );
   } else {
-    await getPool().query('UPDATE orders SET status = ? WHERE id = ?', [status, id]);
+    if (estTime !== undefined) {
+      await getPool().query('UPDATE orders SET status = ?, est_ready_in = ? WHERE id = ?', [status, estTime, id]);
+    } else {
+      await getPool().query('UPDATE orders SET status = ? WHERE id = ?', [status, id]);
+    }
   }
   const [rows] = await getPool().query('SELECT * FROM orders WHERE id = ?', [id]);
   return mapOrder(rows[0]);
+}
+
+async function updateOrderEta(id, etaData = {}) {
+  const fields = [];
+  const values = [];
+  if (etaData.est_ready_in !== undefined) { fields.push('est_ready_in = ?'); values.push(etaData.est_ready_in); }
+  if (etaData.estimated_ready_at !== undefined) { fields.push('estimated_ready_at = ?'); values.push(new Date(etaData.estimated_ready_at)); }
+  if (etaData.safety_buffer_minutes !== undefined) { fields.push('safety_buffer_minutes = ?'); values.push(etaData.safety_buffer_minutes); }
+  if (etaData.is_delayed !== undefined) { fields.push('is_delayed = ?'); values.push(etaData.is_delayed ? 1 : 0); }
+  if (etaData.delay_minutes !== undefined) { fields.push('delay_minutes = ?'); values.push(etaData.delay_minutes); }
+
+  if (fields.length) {
+    values.push(id);
+    await getPool().query(`UPDATE orders SET ${fields.join(', ')} WHERE id = ?`, values);
+  }
+  const [rows] = await getPool().query('SELECT * FROM orders WHERE id = ?', [id]);
+  return mapOrder(rows[0]);
+}
+
+async function getCompletedOrders(limit = 50) {
+  const [rows] = await getPool().query(
+    `SELECT * FROM orders WHERE status IN ('Ready', 'Received') ORDER BY placed_at DESC LIMIT ?`,
+    [limit]
+  );
+  return rows.map(mapOrder);
+}
+
+// --- Feedback Methods ---
+async function saveFeedback(fb) {
+  const id = fb.id || `FB_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
+  const tagsStr = Array.isArray(fb.tags) ? fb.tags.join(', ') : (fb.tags || '');
+  await getPool().query(
+    `INSERT INTO order_feedback (id, order_id, user_id, user_name, rating, comment, tags, assigned_employee, created_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    [
+      id, fb.order_id, fb.user_id || 'guest', fb.user_name || 'Customer',
+      parseInt(fb.rating, 10) || 5, fb.comment || '', tagsStr,
+      fb.assigned_employee || null, fb.created_at ? new Date(fb.created_at) : new Date()
+    ]
+  );
+
+  // Update order flag
+  try {
+    await getPool().query(
+      'UPDATE orders SET feedback_submitted = 1, feedback_rating = ? WHERE id = ?',
+      [parseInt(fb.rating, 10) || 5, fb.order_id]
+    );
+  } catch (e) {}
+
+  return {
+    id,
+    order_id: fb.order_id,
+    user_id: fb.user_id || 'guest',
+    user_name: fb.user_name || 'Customer',
+    rating: parseInt(fb.rating, 10) || 5,
+    comment: fb.comment || '',
+    tags: tagsStr,
+    assigned_employee: fb.assigned_employee || null,
+    created_at: new Date().toISOString()
+  };
+}
+
+async function getFeedback(orderId = null) {
+  if (orderId) {
+    const [rows] = await getPool().query('SELECT * FROM order_feedback WHERE order_id = ?', [orderId]);
+    return rows.length ? rows[0] : null;
+  }
+  const [rows] = await getPool().query('SELECT * FROM order_feedback ORDER BY created_at DESC');
+  return rows;
+}
+
+async function getFeedbackStats() {
+  const [all] = await getPool().query('SELECT * FROM order_feedback ORDER BY created_at DESC');
+  const total = all.length;
+  if (total === 0) {
+    return {
+      total: 0,
+      totalReviews: 0,
+      averageRating: 5.0,
+      breakdown: { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 },
+      employeeRatings: {},
+      recent: [],
+      recentFeedback: []
+    };
+  }
+
+  let sum = 0;
+  const breakdown = { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 };
+  const empMap = {};
+
+  all.forEach(f => {
+    const r = Math.min(5, Math.max(1, parseInt(f.rating, 10) || 5));
+    sum += r;
+    breakdown[r] = (breakdown[r] || 0) + 1;
+
+    if (f.assigned_employee) {
+      if (!empMap[f.assigned_employee]) {
+        empMap[f.assigned_employee] = { total: 0, sum: 0, name: f.assigned_employee_name || f.assigned_employee };
+      }
+      empMap[f.assigned_employee].total++;
+      empMap[f.assigned_employee].sum += r;
+    }
+  });
+
+  const employeeRatings = {};
+  for (const [empId, data] of Object.entries(empMap)) {
+    employeeRatings[empId] = {
+      name: data.name,
+      count: data.total,
+      totalReviews: data.total,
+      avg: parseFloat((data.sum / data.total).toFixed(1)),
+      averageRating: parseFloat((data.sum / data.total).toFixed(1))
+    };
+  }
+
+  const recentList = all.slice(0, 15).map(f => ({
+    ...f,
+    tags: f.tags ? (typeof f.tags === 'string' ? f.tags.split(',').map(s => s.trim()).filter(Boolean) : f.tags) : []
+  }));
+
+  return {
+    total: total,
+    totalReviews: total,
+    averageRating: parseFloat((sum / total).toFixed(1)),
+    breakdown,
+    employeeRatings,
+    recent: recentList,
+    recentFeedback: recentList
+  };
 }
 
 async function assignOrder(id, employeeId, employeeName) {
@@ -502,6 +696,11 @@ module.exports = {
   getOrder,
   createOrder,
   updateOrderStatus,
+  updateOrderEta,
+  getCompletedOrders,
+  saveFeedback,
+  getFeedback,
+  getFeedbackStats,
   assignOrder,
   cancelOrder,
   getQueueCount,

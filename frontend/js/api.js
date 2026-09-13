@@ -121,3 +121,71 @@ async function cancelOrder(orderId, reason = 'Cancelled by user') {
     return null;
   }
 }
+
+// ============================
+// FEEDBACK & ETA ENDPOINTS
+// ============================
+async function submitFeedback(feedbackData) {
+  try {
+    const res = await fetch(`${API_BASE}/feedback`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(feedbackData)
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || 'Failed to submit feedback');
+    }
+    return await res.json();
+  } catch (err) {
+    console.error('Error submitting feedback:', err);
+    return { success: false, error: err.message };
+  }
+}
+
+async function getFeedbackStats() {
+  try {
+    const res = await fetch(`${API_BASE}/feedback/stats`);
+    if (!res.ok) throw new Error('Failed to fetch feedback stats');
+    return await res.json();
+  } catch (err) {
+    console.error('Error fetching feedback stats:', err);
+    return null;
+  }
+}
+
+async function getFeedbackForOrder(orderId) {
+  try {
+    const res = await fetch(`${API_BASE}/feedback?orderId=${orderId}`);
+    if (!res.ok) return null;
+    const data = await res.json();
+    return Array.isArray(data) && data.length > 0 ? data[0] : null;
+  } catch (err) {
+    return null;
+  }
+}
+
+async function getEtaAnalytics() {
+  try {
+    const res = await fetch(`${API_BASE}/eta/analytics`);
+    if (!res.ok) throw new Error('Failed to fetch ETA analytics');
+    return await res.json();
+  } catch (err) {
+    console.error('Error fetching ETA analytics:', err);
+    return null;
+  }
+}
+
+async function updateBufferSettings(settings) {
+  try {
+    const res = await fetch(`${API_BASE}/settings/buffer`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(settings)
+    });
+    return await res.json();
+  } catch (err) {
+    console.error('Error updating buffer settings:', err);
+    return null;
+  }
+}

@@ -39,6 +39,13 @@ CREATE TABLE IF NOT EXISTS orders (
   assigned_employee VARCHAR(50) DEFAULT NULL,
   assigned_employee_name VARCHAR(100) DEFAULT NULL,
   assigned_at DATETIME(3) DEFAULT NULL,
+  started_preparing_at DATETIME(3) DEFAULT NULL,
+  ready_at DATETIME(3) DEFAULT NULL,
+  actual_prep_minutes DECIMAL(6, 2) DEFAULT NULL,
+  estimated_ready_at DATETIME(3) DEFAULT NULL,
+  safety_buffer_minutes DECIMAL(5, 2) DEFAULT 5.0,
+  is_delayed TINYINT(1) DEFAULT 0,
+  delay_minutes INT DEFAULT 0,
   cancellation_reason TEXT DEFAULT NULL,
   cancelled_at DATETIME(3) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
@@ -60,4 +67,17 @@ CREATE TABLE IF NOT EXISTS user_favorites (
   item_id BIGINT NOT NULL,
   UNIQUE KEY uniq_user_item (user_id, item_id),
   CONSTRAINT fk_fav_item FOREIGN KEY (item_id) REFERENCES menu_items(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS order_feedback (
+  id VARCHAR(50) PRIMARY KEY,
+  order_id VARCHAR(50) NOT NULL,
+  user_id VARCHAR(255) DEFAULT NULL,
+  user_name VARCHAR(255) DEFAULT NULL,
+  rating INT NOT NULL,
+  comment TEXT DEFAULT NULL,
+  tags TEXT DEFAULT NULL,
+  assigned_employee VARCHAR(50) DEFAULT NULL,
+  created_at DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+  CONSTRAINT fk_feedback_order FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

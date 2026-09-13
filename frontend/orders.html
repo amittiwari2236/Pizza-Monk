@@ -8,6 +8,144 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/style.css">
+  <style>
+    .eta-card {
+      padding: 18px 20px;
+      border-radius: 16px;
+      background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+      color: #ffffff;
+      margin-bottom: 16px;
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.2);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      position: relative;
+      overflow: hidden;
+    }
+    .eta-card::before {
+      content: '';
+      position: absolute;
+      top: -30px;
+      right: -30px;
+      width: 100px;
+      height: 100px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(225, 29, 72, 0.25) 0%, transparent 70%);
+      pointer-events: none;
+    }
+    .eta-countdown-val {
+      font-size: 38px;
+      font-weight: 800;
+      letter-spacing: -1px;
+      color: #f8fafc;
+      line-height: 1;
+      font-family: inherit;
+    }
+    .eta-pulse-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #10b981;
+      display: inline-block;
+      animation: etaPulse 1.8s infinite;
+    }
+    @keyframes etaPulse {
+      0% { transform: scale(0.9); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+      70% { transform: scale(1.1); box-shadow: 0 0 0 8px rgba(16, 185, 129, 0); }
+      100% { transform: scale(0.9); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+    }
+    .star-btn {
+      font-size: 34px;
+      color: #cbd5e1;
+      cursor: pointer;
+      transition: transform 0.15s cubic-bezier(0.175, 0.885, 0.32, 1.275), color 0.15s ease;
+      user-select: none;
+      padding: 0 4px;
+    }
+    .star-btn:hover, .star-btn.active {
+      color: #f59e0b;
+      transform: scale(1.22);
+    }
+    .tag-chip {
+      padding: 6px 14px;
+      border-radius: 999px;
+      border: 1px solid #e2e8f0;
+      background: #f8fafc;
+      color: #334155;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      font-family: inherit;
+    }
+    .tag-chip:hover {
+      background: #f1f5f9;
+      border-color: #cbd5e1;
+    }
+    .tag-chip.selected {
+      background: #e11d48;
+      color: #ffffff;
+      border-color: #e11d48;
+      box-shadow: 0 2px 8px rgba(225, 29, 72, 0.3);
+    }
+    .eta-progress-track {
+      height: 6px;
+      background: rgba(255, 255, 255, 0.15);
+      border-radius: 999px;
+      overflow: hidden;
+      margin: 14px 0 8px;
+    }
+    .eta-progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #10b981, #06b6d4, #f59e0b);
+      border-radius: 999px;
+      transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .eta-pill-row {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      margin-top: 12px;
+    }
+    .eta-pill {
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      padding: 4px 9px;
+      border-radius: 8px;
+      font-size: 11px;
+      font-weight: 600;
+      color: rgba(255, 255, 255, 0.88);
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .eta-delay-banner {
+      background: rgba(239, 68, 68, 0.22);
+      border: 1px solid rgba(239, 68, 68, 0.5);
+      color: #fecaca;
+      border-radius: 10px;
+      padding: 8px 12px;
+      margin-top: 12px;
+      font-size: 12px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      animation: alertPulse 2s infinite;
+    }
+    @keyframes alertPulse {
+      0% { opacity: 0.9; }
+      50% { opacity: 1; box-shadow: 0 0 10px rgba(239, 68, 68, 0.4); }
+      100% { opacity: 0.9; }
+    }
+    .feedback-submitted-box {
+      background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+      border: 1px solid #bbf7d0;
+      border-radius: 16px;
+      padding: 22px;
+      text-align: center;
+      margin-bottom: 16px;
+      box-shadow: 0 4px 14px rgba(16, 185, 129, 0.12);
+    }
+  </style>
   <script>
     if (!sessionStorage.getItem('userName')) {
       window.location.href = 'login.html';
@@ -102,6 +240,7 @@
         } catch (e) {}
         
         order.placedAt = placedTime;
+        currentOrder = order;
 
         let itemsHtml = '';
         order.items.forEach(item => {
@@ -167,6 +306,139 @@
           bannerTitle = order.status;
         }
 
+        // --- DYNAMIC ETA CARD BUILDER ---
+        const showEtaCard = ['Pending', 'Preparing', 'Almost Ready'].includes(order.status);
+        let etaCardHtml = '';
+        if (showEtaCard) {
+          const eta = order.eta_info || {};
+          const remainingMins = typeof eta.remaining_minutes === 'number' ? eta.remaining_minutes : (order.est_ready_in || 10);
+          const targetTime = eta.estimated_ready_at ? new Date(eta.estimated_ready_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
+          const bufferMins = eta.dynamic_buffer_minutes || order.safety_buffer_minutes || 5;
+          const isDelayed = !!(eta.is_delayed || order.is_delayed);
+          const delayMins = eta.delay_minutes || order.delay_minutes || 0;
+          const progressPct = eta.progress_percent || (order.status === 'Pending' ? 20 : order.status === 'Preparing' ? 65 : 92);
+          const prepMins = eta.prep_minutes || 8;
+          const queueMins = eta.queue_wait_minutes || 0;
+          const chefName = order.assigned_employee_name || order.assigned_employee || 'Station Master';
+
+          etaCardHtml = `
+            <div class="eta-card" id="dynamic-eta-card">
+              <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 12px;">
+                <div>
+                  <div style="font-size: 11px; text-transform: uppercase; font-weight: 700; letter-spacing: 0.8px; color: #94a3b8; display: flex; align-items: center; gap: 6px;">
+                    <span class="eta-pulse-dot"></span> Live Preparation ETA
+                  </div>
+                  <div style="display: flex; align-items: baseline; gap: 6px; margin-top: 6px;">
+                    <span id="eta-countdown-val" class="eta-countdown-val">${remainingMins}</span>
+                    <span style="font-size: 16px; font-weight: 700; color: #94a3b8;">MINS REMAINING</span>
+                  </div>
+                </div>
+                <div style="text-align: right;">
+                  <div style="font-size: 11px; color: #94a3b8; font-weight: 600;">ESTIMATED READY</div>
+                  <div style="font-size: 14px; font-weight: 800; color: #38bdf8; margin-top: 2px;">~${targetTime || '10-12m'}</div>
+                </div>
+              </div>
+
+              <!-- Live Animated Progress Track -->
+              <div class="eta-progress-track">
+                <div class="eta-progress-fill" id="eta-progress-fill" style="width: ${progressPct}%;"></div>
+              </div>
+
+              ${isDelayed ? `
+              <div class="eta-delay-banner" id="eta-delay-banner">
+                <span>⚠️</span>
+                <div>Kitchen running ~${delayMins}m behind initial estimate due to rush. Expediting now!</div>
+              </div>
+              ` : ''}
+
+              <!-- Intelligent Dynamic Breakdown Pills -->
+              <div class="eta-pill-row">
+                <span class="eta-pill" title="Parallel cooking time">🍳 Cook: ~${prepMins}m</span>
+                <span class="eta-pill" title="Workload ahead at station">⏳ Station Queue: +${queueMins}m</span>
+                <span class="eta-pill" style="background: rgba(16, 185, 129, 0.15); border-color: rgba(16, 185, 129, 0.3); color: #6ee7b7;" title="Dynamic safety buffer automatically adjusted to kitchen load">🛡️ Dynamic Buffer: +${bufferMins}m</span>
+                <span class="eta-pill" style="background: rgba(245, 158, 11, 0.15); border-color: rgba(245, 158, 11, 0.3); color: #fcd34d;">👨‍🍳 ${chefName}</span>
+              </div>
+
+              <!-- Detailed Breakdown Toggle -->
+              <div style="margin-top: 12px; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 10px;">
+                <button type="button" onclick="toggleEtaExplainer()" style="background: none; border: none; color: #94a3b8; font-size: 11px; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; padding: 0; font-family: inherit;">
+                  <span>How this dynamic ETA is calculated</span>
+                  <span id="eta-explainer-arrow" style="font-size: 12px; transition: transform 0.2s;">▼</span>
+                </button>
+                <div id="eta-explainer-content" style="display: none; margin-top: 8px; font-size: 11px; color: #94a3b8; line-height: 1.5; background: rgba(0,0,0,0.25); padding: 8px 10px; border-radius: 8px;">
+                  Calculated dynamically from item cooking complexity, station workload (${chefName}), kitchen capacity, historical cook speed, and a real-time safety buffer (+${bufferMins}m). Updates automatically in real time!
+                </div>
+              </div>
+            </div>
+          `;
+        }
+
+        // --- FEEDBACK SECTION BUILDER ---
+        const showFeedback = ['Ready', 'Received'].includes(order.status);
+        let feedbackHtml = '';
+        if (showFeedback) {
+          if (order.feedback_submitted && order.feedback) {
+            const stars = '★'.repeat(order.feedback.rating || 5) + '☆'.repeat(5 - (order.feedback.rating || 5));
+            feedbackHtml = `
+              <div class="feedback-submitted-box">
+                <div style="font-size: 32px; margin-bottom: 6px;">🌟</div>
+                <h3 style="font-size: 17px; font-weight: 700; color: #166534; margin: 0 0 6px 0;">Feedback Recorded!</h3>
+                <div style="font-size: 24px; color: #f59e0b; margin-bottom: 6px; letter-spacing: 2px;">${stars}</div>
+                ${order.feedback.comment ? `<p style="font-size: 13px; color: #374151; font-style: italic; margin: 0 0 8px 0;">"${order.feedback.comment}"</p>` : ''}
+                ${order.feedback.tags && order.feedback.tags.length > 0 ? `
+                  <div style="display: flex; justify-content: center; gap: 6px; flex-wrap: wrap; margin-bottom: 8px;">
+                    ${order.feedback.tags.map(t => `<span style="background: rgba(16,185,129,0.15); color: #065f46; font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 12px;">${t}</span>`).join('')}
+                  </div>
+                ` : ''}
+                <div style="font-size: 11px; color: #15803d; font-weight: 600;">
+                  Verified review for ${order.assigned_employee_name || 'Chef Station'} • Thank you for your feedback!
+                </div>
+              </div>
+            `;
+          } else {
+            feedbackHtml = `
+              <div class="box-card" id="feedback-card" style="padding: 20px; border-radius: 16px; border: 1px solid #e2e8f0; box-shadow: 0 4px 20px rgba(0,0,0,0.06); margin-bottom: 16px;">
+                <div style="text-align: center; margin-bottom: 14px;">
+                  <span style="font-size: 30px; display: block; margin-bottom: 4px;">⭐</span>
+                  <h3 style="font-size: 18px; color: #0f172a; margin: 0 0 4px 0; font-weight: 700;">Rate Your Food & Service</h3>
+                  <p style="color: #64748b; font-size: 13px; margin: 0;">How was your order from ${order.assigned_employee_name || 'our kitchen team'}?</p>
+                </div>
+
+                <!-- Star Rating -->
+                <div style="display: flex; justify-content: center; gap: 6px; margin-bottom: 6px;" id="star-rating-container">
+                  <span class="star-btn active" data-val="1" onclick="setRating(1)" onmouseover="hoverRating(1)" onmouseout="resetRating()">★</span>
+                  <span class="star-btn active" data-val="2" onclick="setRating(2)" onmouseover="hoverRating(2)" onmouseout="resetRating()">★</span>
+                  <span class="star-btn active" data-val="3" onclick="setRating(3)" onmouseover="hoverRating(3)" onmouseout="resetRating()">★</span>
+                  <span class="star-btn active" data-val="4" onclick="setRating(4)" onmouseover="hoverRating(4)" onmouseout="resetRating()">★</span>
+                  <span class="star-btn active" data-val="5" onclick="setRating(5)" onmouseover="hoverRating(5)" onmouseout="resetRating()">★</span>
+                </div>
+                <div id="star-label" style="text-align: center; font-size: 12px; font-weight: 700; color: #f59e0b; height: 18px; margin-bottom: 12px;">5 Stars - Outstanding & Delicious!</div>
+
+                <!-- Quick Tags -->
+                <div style="font-size: 11px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px;">What went well?</div>
+                <div style="display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 14px;" id="feedback-tags">
+                  <button type="button" class="tag-chip" onclick="toggleFeedbackTag(this, '⚡ Super Fast')">⚡ Super Fast</button>
+                  <button type="button" class="tag-chip" onclick="toggleFeedbackTag(this, '🔥 Piping Hot')">🔥 Piping Hot</button>
+                  <button type="button" class="tag-chip" onclick="toggleFeedbackTag(this, '👌 Perfect Taste')">👌 Perfect Taste</button>
+                  <button type="button" class="tag-chip" onclick="toggleFeedbackTag(this, '🧀 Extra Cheesy')">🧀 Extra Cheesy</button>
+                  <button type="button" class="tag-chip" onclick="toggleFeedbackTag(this, '📦 Neatly Packed')">📦 Neatly Packed</button>
+                  <button type="button" class="tag-chip" onclick="toggleFeedbackTag(this, '⏱️ Running Late')">⏱️ Running Late</button>
+                </div>
+
+                <!-- Comments -->
+                <div style="margin-bottom: 14px;">
+                  <textarea id="feedback-comment-input" rows="2" placeholder="Write any specific feedback on food quality or wait time..." style="width: 100%; border: 1px solid #cbd5e1; border-radius: 10px; padding: 10px; font-size: 13px; font-family: inherit; resize: none; box-sizing: border-box; outline: none;"></textarea>
+                </div>
+
+                <!-- Submit Button -->
+                <button id="feedback-submit-btn" class="btn" style="background: linear-gradient(135deg, #FF7A00, #E65100); color: white; border: none; width: 100%; padding: 12px; border-radius: 10px; font-weight: 700; font-size: 14px; cursor: pointer; display: flex; justify-content: center; align-items: center; gap: 8px; box-shadow: 0 4px 12px rgba(255,122,0,0.3);" onclick="submitFeedbackForm('${order.id}')">
+                  Submit Rating & Feedback
+                </button>
+              </div>
+            `;
+          }
+        }
+
         container.innerHTML = `
           <div class="order-header-row" style="margin-top: 16px;">
             <div>
@@ -194,6 +466,12 @@
               </div>
             </div>
           </div>
+
+          <!-- Dynamic Live Preparation ETA Card -->
+          ${etaCardHtml}
+
+          <!-- Customer Feedback Card (when Ready or Received) -->
+          ${feedbackHtml}
           
           ${order.status === 'Pending' ? `
           <button class="btn" style="background: #ef4444; color: white; border: none; width: 100%; padding: 14px; margin-bottom: 16px; margin-top: -8px; border-radius: 12px; font-weight: 600; font-size: 15px; display: flex; justify-content: center; align-items: center; gap: 8px; cursor: pointer; box-shadow: 0 4px 12px rgba(239,68,68,0.25);" onclick="cancelCurrentOrder('${order.id}')">
@@ -265,7 +543,127 @@
           </div>
         `;
 
+        if (showEtaCard && order.eta_info && order.eta_info.estimated_ready_at) {
+          startEtaCountdown(order.eta_info.estimated_ready_at);
+        }
+
         await fetchRealtimeQueue();
+      }
+
+      // --- CLIENT STATE & FEEDBACK HELPERS ---
+      let currentOrder = null;
+      let currentRating = 5;
+      let selectedTags = [];
+      let etaInterval = null;
+
+      window.setRating = function(val) {
+        currentRating = val;
+        updateStarVisuals(val);
+        const labels = ['', '1 Star - Needs Improvement', '2 Stars - Fair', '3 Stars - Good', '4 Stars - Very Good', '5 Stars - Outstanding & Delicious!'];
+        const lbl = document.getElementById('star-label');
+        if (lbl) lbl.textContent = labels[val] || '';
+      };
+
+      window.hoverRating = function(val) {
+        updateStarVisuals(val);
+      };
+
+      window.resetRating = function() {
+        updateStarVisuals(currentRating);
+      };
+
+      function updateStarVisuals(val) {
+        const stars = document.querySelectorAll('.star-btn');
+        stars.forEach(s => {
+          const starVal = parseInt(s.getAttribute('data-val') || '0', 10);
+          s.classList.toggle('active', starVal <= val);
+        });
+      }
+
+      window.toggleFeedbackTag = function(btn, tag) {
+        btn.classList.toggle('selected');
+        if (selectedTags.includes(tag)) {
+          selectedTags = selectedTags.filter(t => t !== tag);
+        } else {
+          selectedTags.push(tag);
+        }
+      };
+
+      window.submitFeedbackForm = async function(orderId) {
+        const btn = document.getElementById('feedback-submit-btn');
+        const commentInput = document.getElementById('feedback-comment-input');
+        const comment = commentInput ? commentInput.value.trim() : '';
+
+        if (btn) {
+          btn.disabled = true;
+          btn.innerText = 'Submitting Feedback...';
+        }
+
+        try {
+          const payload = {
+            order_id: orderId,
+            rating: currentRating,
+            comment: comment,
+            tags: selectedTags,
+            items: currentOrder ? currentOrder.items : [],
+            assigned_employee: currentOrder ? currentOrder.assigned_employee : null,
+            assigned_employee_name: currentOrder ? currentOrder.assigned_employee_name : null
+          };
+
+          const res = await submitFeedback(payload);
+          if (res && res.success) {
+            if (currentOrder) {
+              currentOrder.feedback_submitted = true;
+              currentOrder.feedback = res.feedback;
+            }
+            loadOrder();
+          } else {
+            alert((res && res.error) || 'Failed to submit feedback. Please try again.');
+            if (btn) {
+              btn.disabled = false;
+              btn.innerText = 'Submit Rating & Feedback';
+            }
+          }
+        } catch (err) {
+          console.error('Error submitting feedback:', err);
+          alert('Failed to submit feedback.');
+          if (btn) {
+            btn.disabled = false;
+            btn.innerText = 'Submit Rating & Feedback';
+          }
+        }
+      };
+
+      window.toggleEtaExplainer = function() {
+        const c = document.getElementById('eta-explainer-content');
+        const a = document.getElementById('eta-explainer-arrow');
+        if (c) {
+          const isVisible = c.style.display === 'block';
+          c.style.display = isVisible ? 'none' : 'block';
+          if (a) a.style.transform = isVisible ? 'rotate(0deg)' : 'rotate(180deg)';
+        }
+      };
+
+      function startEtaCountdown(readyAtIso) {
+        if (etaInterval) clearInterval(etaInterval);
+        if (!readyAtIso) return;
+
+        const targetTime = new Date(readyAtIso).getTime();
+        function tick() {
+          const now = Date.now();
+          const diffMs = targetTime - now;
+          const countdownEl = document.getElementById('eta-countdown-val');
+          if (!countdownEl) return;
+
+          if (diffMs > 0) {
+            const remainingMinutes = Math.ceil(diffMs / 60000);
+            countdownEl.textContent = remainingMinutes;
+          } else {
+            countdownEl.textContent = '1';
+          }
+        }
+        tick();
+        etaInterval = setInterval(tick, 5000);
       }
 
       async function fetchRealtimeQueue() {
@@ -286,17 +684,41 @@
       window.cancelCurrentOrder = async function(id) {
         if(confirm('Are you sure you want to cancel this order?')) {
           await cancelOrder(id);
-          // UI will update via socket automatically
         }
       };
       
       const socket = io(``);
       socket.on('connect', () => {
-        // Resync completely on internet reconnect
         loadOrder();
       });
       socket.on('refresh_orders', () => {
         loadOrder();
+      });
+      socket.on('order_status_updated', (data) => {
+        if (!data || !currentOrder || data.order_id === currentOrder.id) {
+          loadOrder();
+        }
+      });
+      socket.on('order_eta_updated', (data) => {
+        if (data && currentOrder && data.order_id === currentOrder.id) {
+          if (currentOrder.eta_info) {
+            currentOrder.eta_info.remaining_minutes = data.remaining_minutes;
+            currentOrder.eta_info.is_delayed = data.is_delayed;
+            currentOrder.eta_info.delay_minutes = data.delay_minutes;
+            currentOrder.eta_info.estimated_ready_at = data.estimated_ready_at;
+          }
+          const countdownEl = document.getElementById('eta-countdown-val');
+          if (countdownEl) countdownEl.textContent = data.remaining_minutes;
+          const fillEl = document.getElementById('eta-progress-fill');
+          if (fillEl && data.progress_percent) fillEl.style.width = data.progress_percent + '%';
+        }
+      });
+      socket.on('feedback_submitted', (data) => {
+        if (data && currentOrder && data.order_id === currentOrder.id) {
+          currentOrder.feedback_submitted = true;
+          currentOrder.feedback = data;
+          loadOrder();
+        }
       });
       socket.on('refresh_queue', () => {
         fetchRealtimeQueue();

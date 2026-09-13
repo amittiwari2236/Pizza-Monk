@@ -20,19 +20,27 @@ document.addEventListener('DOMContentLoaded', () => {
   fetchMenu();
   fetchCategories();
   fetchKitchenStaff();
+  fetchEtaAnalytics();
+  fetchFeedbackData();
   
   // Load canteen status
   fetchSettings();
 
   // Setup socket listeners
   socket.on('refresh_queue', fetchStats);
-  socket.on('refresh_orders', () => { fetchOrders(); fetchKitchenStaff(); });
+  socket.on('refresh_orders', () => { fetchOrders(); fetchKitchenStaff(); fetchEtaAnalytics(); });
   socket.on('refresh_kitchen_staff', fetchKitchenStaff);
-  socket.on('order_assigned', () => { fetchOrders(); fetchKitchenStaff(); });
-  socket.on('order_status_updated', () => { fetchOrders(); fetchKitchenStaff(); });
+  socket.on('order_assigned', () => { fetchOrders(); fetchKitchenStaff(); fetchEtaAnalytics(); });
+  socket.on('order_status_updated', () => { fetchOrders(); fetchKitchenStaff(); fetchEtaAnalytics(); });
+  socket.on('order_eta_updated', () => { fetchEtaAnalytics(); });
+  socket.on('feedback_submitted', () => { fetchFeedbackData(); });
   socket.on('refresh_menu', fetchMenu);
   socket.on('refresh_categories', fetchCategories);
   socket.on('refresh_status', (settings) => updateAdminStatusIndicator(settings.canteenStatus));
+  socket.on('settings_updated', (settings) => {
+    if (settings.canteenStatus) updateAdminStatusIndicator(settings.canteenStatus);
+    if (settings.dynamicBuffer) renderBufferAnalytics(settings.dynamicBuffer);
+  });
   socket.on('active_users_count', (count) => {
     const el = document.getElementById('stat-active-users');
     if(el) el.innerHTML = `${count} <span>online</span>`;
@@ -51,6 +59,8 @@ document.addEventListener('DOMContentLoaded', () => {
       fetchOrders();
       fetchKitchenStaff();
       fetchSettings();
+      fetchEtaAnalytics();
+      fetchFeedbackData();
     }
   }, 5000);
 });
@@ -1047,3 +1057,171 @@ function renderLiveActivityFeed() {
     `;
   });
 }
+
+// --- DYNAMIC ETA ANALYTICS & BUFFER CONTROLS ---
+async function fetchEtaAnalytics() {
+  try {
+    const res = await fetch('/api/eta/analytics');
+    if (!res.ok) return;
+    const data = await res.json();
+    renderBufferAnalytics(data.safetyBuffer, data);
+  } catch (err) {
+    console.error('Error fetching ETA analytics:', err);
+  }
+}
+
+function renderBufferAnalytics(bufData, fullData) {
+  if (!bufData) return;
+  const currentBuf = bufData.currentEffectiveBuffer || 5;
+  const isOverride = !!bufData.isManualOverride;
+
+  // 1. KPI Card
+  const elBufKpi = document.getElementById('stat-safety-buffer');
+  if (elBufKpi) {
+    elBufKpi.innerHTML = `${currentBuf}m <span id="stat-buffer-mode" style="font-size:11px; font-weight:700; color:${isOverride ? '#d97706' : '#059669'}; background:${isOverride ? '#fef3c7' : '#d1fae5'}; padding:2px 6px; border-radius:10px;">${isOverride ? 'MANUAL' : 'AUTO'}</span>`;
+  }
+
+  // 2. Kitchen View Buffer Card
+  const elBufVal = document.getElementById('analytics-buffer-val');
+  if (elBufVal) elBufVal.textContent = `${currentBuf} mins`;
+
+  const elModeBadge = document.getElementById('buffer-mode-badge');
+  if (elModeBadge) {
+    elModeBadge.innerHTML = isOverride 
+      ? `<span class="pulse-dot" style="background: #f59e0b;"></span> Manual Override Active` 
+      : `<span class="pulse-dot" style="background: #10b981;"></span> Auto-Tuned Dynamic Buffer`;
+    elModeBadge.style.background = isOverride ? '#fef3c7' : '#d1fae5';
+    elModeBadge.style.color = isOverride ? '#92400e' : '#065f46';
+  }
+
+  const elBufDesc = document.getElementById('analytics-buffer-desc');
+  if (elBufDesc) {
+    if (isOverride) {
+      elBufDesc.textContent = 'Manually Locked by Admin';
+      elBufDesc.style.color = '#d97706';
+    } else if (currentBuf > 7) {
+      elBufDesc.textContent = 'Elevated (Peak Rush Load)';
+      elBufDesc.style.color = '#ef4444';
+    } else if (currentBuf < 4) {
+      elBufDesc.textContent = 'Reduced (Low Queue Velocity)';
+      elBufDesc.style.color = '#10b981';
+    } else {
+      elBufDesc.textContent = 'Normal Kitchen Workload';
+      elBufDesc.style.color = '#10b981';
+    }
+  }
+
+  const inputEl = document.getElementById('manual-buffer-input');
+  if (inputEl && !document.activeElement?.isSameNode(inputEl)) {
+    inputEl.value = currentBuf;
+  }
+
+  if (fullData) {
+    const elRatio = document.getElementById('analytics-learning-ratio');
+    if (elRatio && fullData.historical) {
+      elRatio.textContent = (fullData.historical.learningRatio || 1.00).toFixed(2) + 'x';
+    }
+    const elRush = document.getElementById('analytics-rush-load');
+    if (elRush && fullData.kitchenCapacity) {
+      elRush.textContent = (fullData.kitchenCapacity.rushFactor || 1.0).toFixed(1) + 'x';
+    }
+    const elDelay = document.getElementById('analytics-delay-freq');
+    if (elDelay && fullData.historical) {
+      elDelay.textContent = Math.round((fullData.historical.delayFrequency || 0) * 100) + '%';
+    }
+  }
+}
+
+window.applyManualBuffer = async function(isOverride) {
+  const inputEl = document.getElementById('manual-buffer-input');
+  const manualMins = inputEl ? parseInt(inputEl.value, 10) : 5;
+
+  try {
+    const res = await fetch('/api/settings/buffer', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        manual_buffer: manualMins,
+        is_manual_override: isOverride
+      })
+    });
+    const data = await res.json();
+    if (data.success) {
+      alert(isOverride ? `Safety Buffer manually set to ${manualMins} minutes.` : 'Safety Buffer reset to dynamic auto-tuning.');
+      fetchEtaAnalytics();
+    } else {
+      alert(data.error || 'Failed to update buffer setting.');
+    }
+  } catch (err) {
+    console.error('Error applying buffer:', err);
+    alert('Failed to update buffer settings.');
+  }
+};
+
+// --- CUSTOMER FEEDBACK DATA STREAM ---
+async function fetchFeedbackData() {
+  try {
+    const res = await fetch('/api/feedback/stats');
+    if (!res.ok) return;
+    const data = await res.json();
+
+    // 1. KPI Card
+    const elRating = document.getElementById('stat-customer-rating');
+    if (elRating) {
+      const avg = (data.averageRating || 5.0).toFixed(1);
+      elRating.innerHTML = `⭐ ${avg} <span id="stat-feedback-count" style="font-size:12px; font-weight:500; color:#6b7280;">(${data.total || 0} reviews)</span>`;
+    }
+
+    const badge = document.getElementById('feedback-summary-badge');
+    if (badge) {
+      badge.textContent = `⭐ ${(data.averageRating || 5.0).toFixed(1)} / 5.0 (${data.total || 0} reviews)`;
+    }
+
+    // 2. Feedback Stream List
+    const container = document.getElementById('feedback-stream-container');
+    if (!container) return;
+
+    if (!data.recentFeedback || data.recentFeedback.length === 0) {
+      container.innerHTML = '<div style="text-align: center; color: var(--text-gray); padding: 30px;">No reviews recorded yet. Reviews will stream here live as customers complete orders!</div>';
+      return;
+    }
+
+    container.innerHTML = data.recentFeedback.map(fb => {
+      const stars = '★'.repeat(fb.rating || 5) + '☆'.repeat(5 - (fb.rating || 5));
+      const timeStr = fb.created_at ? new Date(fb.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
+      const tagsHtml = (fb.tags && fb.tags.length > 0)
+        ? fb.tags.map(t => `<span style="background: rgba(245,158,11,0.14); color: #b45309; font-size: 11px; font-weight: 700; padding: 2px 7px; border-radius: 10px;">${escapeHtml(t)}</span>`).join(' ')
+        : '';
+      const itemsList = (fb.items && fb.items.length > 0)
+        ? fb.items.map(i => i.name).join(', ')
+        : '';
+
+      return `
+        <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 10px; padding: 14px; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 6px;">
+            <div>
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <strong style="font-size: 14px; color: #1e293b;">${escapeHtml(fb.user_name || 'Customer')}</strong>
+                <span style="font-size: 11px; color: #64748b; background: #f1f5f9; padding: 1px 6px; border-radius: 4px;">Order #${fb.order_id}</span>
+                ${fb.assigned_employee_name ? `<span style="font-size: 11px; font-weight: 600; color: #c2410c; background: #fff7ed; border: 1px solid #ffedd5; padding: 1px 6px; border-radius: 4px;">👨‍🍳 ${escapeHtml(fb.assigned_employee_name)}</span>` : ''}
+              </div>
+              <div style="color: #f59e0b; font-size: 15px; letter-spacing: 1px; margin-top: 3px;">${stars}</div>
+            </div>
+            <span style="font-size: 12px; color: #94a3b8;">${timeStr}</span>
+          </div>
+
+          ${fb.comment ? `<p style="font-size: 13px; color: #334155; margin: 6px 0; font-style: italic;">"${escapeHtml(fb.comment)}"</p>` : ''}
+          
+          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; margin-top: 8px;">
+            <div style="display: flex; gap: 6px; flex-wrap: wrap;">${tagsHtml}</div>
+            ${itemsList ? `<small style="color: #94a3b8; font-size: 11px;">Items: ${escapeHtml(itemsList)}</small>` : ''}
+          </div>
+        </div>
+      `;
+    }).join('');
+
+  } catch (err) {
+    console.error('Error fetching feedback stats:', err);
+  }
+}
+

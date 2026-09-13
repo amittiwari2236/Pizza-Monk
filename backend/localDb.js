@@ -7,24 +7,29 @@ let INITIAL_DATA = {};
 try {
   INITIAL_DATA = JSON.parse(fs.readFileSync(path.join(__dirname, 'local_data.json'), 'utf8'));
 } catch (e) {
-  INITIAL_DATA = { categories: [], menu_items: [], users: [], orders: [], order_items: [], user_favorites: [] };
+  INITIAL_DATA = { categories: [], menu_items: [], users: [], orders: [], order_items: [], user_favorites: [], feedback: [] };
 }
+if (!INITIAL_DATA.feedback) INITIAL_DATA.feedback = [];
 
 class LocalDb {
   constructor() {
     this.data = this.loadData();
+    if (!this.data.feedback) this.data.feedback = [];
   }
 
   loadData() {
     try {
       if (fs.existsSync(DB_FILE)) {
         const raw = fs.readFileSync(DB_FILE, 'utf8');
-        return JSON.parse(raw);
+        const parsed = JSON.parse(raw);
+        if (!parsed.feedback) parsed.feedback = [];
+        return parsed;
       } else if (process.env.VERCEL) {
         const fallback = path.join(__dirname, 'local_data.json');
         if (fs.existsSync(fallback)) {
           const raw = fs.readFileSync(fallback, 'utf8');
           const data = JSON.parse(raw);
+          if (!data.feedback) data.feedback = [];
           this.saveData(data);
           return data;
         }
@@ -257,11 +262,131 @@ class LocalDb {
     if (order) {
       order.status = status;
       if (estTime !== undefined) order.est_ready_in = estTime;
-      if (status === 'Ready') order.ready_at = new Date().toISOString();
+
+      if (status === 'Preparing') {
+        if (!order.started_preparing_at) {
+          order.started_preparing_at = new Date().toISOString();
+        }
+      } else if (status === 'Ready' || status === 'Received') {
+        if (!order.ready_at) {
+          order.ready_at = new Date().toISOString();
+        }
+        const start = order.started_preparing_at || order.placed_at;
+        if (start) {
+          order.actual_prep_minutes = parseFloat(((new Date(order.ready_at).getTime() - new Date(start).getTime()) / 60000).toFixed(1));
+        }
+        order.is_delayed = false;
+        order.delay_minutes = 0;
+      }
+
       this.saveData();
       return order;
     }
     return null;
+  }
+
+  updateOrderEta(id, etaData = {}) {
+    const order = this.data.orders.find(o => o.id === id);
+    if (order) {
+      if (etaData.est_ready_in !== undefined) order.est_ready_in = etaData.est_ready_in;
+      if (etaData.estimated_ready_at !== undefined) order.estimated_ready_at = etaData.estimated_ready_at;
+      if (etaData.safety_buffer_minutes !== undefined) order.safety_buffer_minutes = etaData.safety_buffer_minutes;
+      if (etaData.is_delayed !== undefined) order.is_delayed = etaData.is_delayed;
+      if (etaData.delay_minutes !== undefined) order.delay_minutes = etaData.delay_minutes;
+      this.saveData();
+      return order;
+    }
+    return null;
+  }
+
+  getCompletedOrders(limit = 50) {
+    return this.data.orders
+      .filter(o => (o.status === 'Ready' || o.status === 'Received'))
+      .sort((a, b) => new Date(b.placed_at) - new Date(a.placed_at))
+      .slice(0, limit);
+  }
+
+  // --- Feedback System ---
+  saveFeedback(fb) {
+    if (!this.data.feedback) this.data.feedback = [];
+    const newFb = {
+      id: fb.id || `FB_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+      order_id: fb.order_id,
+      user_id: fb.user_id || 'guest',
+      user_name: fb.user_name || 'Customer',
+      rating: parseInt(fb.rating, 10) || 5,
+      comment: fb.comment || '',
+      tags: Array.isArray(fb.tags) ? fb.tags.join(', ') : (fb.tags || ''),
+      assigned_employee: fb.assigned_employee || null,
+      created_at: fb.created_at || new Date().toISOString()
+    };
+    this.data.feedback.unshift(newFb);
+
+    // Mark order as having feedback
+    const order = this.data.orders.find(o => o.id === fb.order_id);
+    if (order) {
+      order.feedback_submitted = true;
+      order.feedback_rating = newFb.rating;
+    }
+
+    this.saveData();
+    return newFb;
+  }
+
+  getFeedback(orderId = null) {
+    if (!this.data.feedback) return [];
+    if (orderId) {
+      return this.data.feedback.find(f => f.order_id === orderId) || null;
+    }
+    return [...this.data.feedback];
+  }
+
+  getFeedbackStats() {
+    const list = this.data.feedback || [];
+    const total = list.length;
+    if (total === 0) {
+      return {
+        totalReviews: 0,
+        averageRating: 5.0,
+        breakdown: { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 },
+        employeeRatings: {},
+        recent: []
+      };
+    }
+
+    let sum = 0;
+    const breakdown = { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 };
+    const empMap = {};
+
+    list.forEach(f => {
+      const r = Math.min(5, Math.max(1, parseInt(f.rating, 10) || 5));
+      sum += r;
+      breakdown[r] = (breakdown[r] || 0) + 1;
+
+      if (f.assigned_employee) {
+        if (!empMap[f.assigned_employee]) {
+          empMap[f.assigned_employee] = { total: 0, sum: 0 };
+        }
+        empMap[f.assigned_employee].total++;
+        empMap[f.assigned_employee].sum += r;
+      }
+    });
+
+    const employeeRatings = {};
+    for (const [empId, data] of Object.entries(empMap)) {
+      employeeRatings[empId] = {
+        totalReviews: data.total,
+        averageRating: parseFloat((data.sum / data.total).toFixed(1))
+      };
+    }
+
+    return {
+      totalReviews: total,
+      averageRating: parseFloat((sum / total).toFixed(1)),
+      breakdown,
+      employeeRatings,
+      recent: list.slice(0, 10)
+    };
   }
 
   assignOrder(id, employeeId, employeeName) {

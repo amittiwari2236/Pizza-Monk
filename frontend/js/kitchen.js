@@ -22,6 +22,7 @@ document.addEventListener('DOMContentLoaded', () => {
   initAuthAndProfile();
   initSocket();
   loadKitchenOrders();
+  fetchChefFeedbackStats();
   setupSoundUI();
 
   // Auto-refresh interval safety net every 30s
@@ -91,6 +92,7 @@ function switchEmployeeView(empId) {
     sessionStorage.setItem('specialization', currentEmployee.specialization);
   }
   updateProfileBadgeUI();
+  updateChefRatingUI();
   renderOrders();
 }
 
@@ -127,6 +129,41 @@ function initSocket() {
   socket.on('refresh_orders', () => {
     loadKitchenOrders();
   });
+
+  socket.on('order_eta_updated', () => {
+    loadKitchenOrders();
+  });
+
+  socket.on('feedback_submitted', () => {
+    fetchChefFeedbackStats();
+  });
+}
+
+let cachedFeedbackStats = null;
+async function fetchChefFeedbackStats() {
+  try {
+    const res = await fetch('/api/feedback/stats');
+    if (!res.ok) return;
+    cachedFeedbackStats = await res.json();
+    updateChefRatingUI();
+  } catch (err) {
+    console.error('Failed to fetch chef feedback stats:', err);
+  }
+}
+
+function updateChefRatingUI() {
+  const elRating = document.getElementById('emp-rating-display');
+  if (!elRating) return;
+
+  if (cachedFeedbackStats && cachedFeedbackStats.employeeRatings) {
+    const empStat = cachedFeedbackStats.employeeRatings[currentEmployee.id];
+    if (empStat && empStat.count > 0) {
+      elRating.textContent = `⭐ ${empStat.avg.toFixed(1)} (${empStat.count} reviews)`;
+      return;
+    }
+  }
+  const generalAvg = cachedFeedbackStats ? (cachedFeedbackStats.averageRating || 5.0).toFixed(1) : '5.0';
+  elRating.textContent = `⭐ ${generalAvg} Rating`;
 }
 
 async function loadKitchenOrders() {
@@ -308,10 +345,17 @@ function buildOrderCardHtml(order) {
         </div>
         <div class="card-header-right">
           <span class="status-pill ${statusClass}">${order.status}</span>
-          <div class="timer-badge">
-            <span class="material-symbols-outlined" style="font-size:13px;">timer</span>
-            Est: ~${order.est_ready_in || 8} min
+          ${order.is_delayed ? `
+          <div class="timer-badge" style="background:#ef4444; color:#fff; font-weight:700; border:1px solid #dc2626;">
+            <span class="material-symbols-outlined" style="font-size:13px;">warning</span>
+            DELAY +${order.delay_minutes || 0}m
           </div>
+          ` : `
+          <div class="timer-badge" title="Dynamic Buffer: +${order.safety_buffer_minutes || 5}m">
+            <span class="material-symbols-outlined" style="font-size:13px;">timer</span>
+            ETA ~${order.est_ready_in || order.estimated_prep_minutes || 8} min
+          </div>
+          `}
         </div>
       </div>
 
