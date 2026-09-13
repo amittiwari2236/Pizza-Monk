@@ -12,8 +12,11 @@
     if (!sessionStorage.getItem('splashed')) {
       window.location.href = 'splash.html';
     } else if (sessionStorage.getItem('userName')) {
-      if (sessionStorage.getItem('userRole') === 'admin') {
+      const role = sessionStorage.getItem('userRole');
+      if (role === 'admin') {
         window.location.href = 'admin.html';
+      } else if (role === 'kitchen' || role === 'employee') {
+        window.location.href = 'kitchen.html';
       } else {
         window.location.href = 'index.html';
       }
@@ -122,6 +125,201 @@
       padding: 24px 20px;
       box-shadow: 0 20px 45px rgba(0, 0, 0, 0.65);
       width: 100%;
+    }
+
+    /* Segmented 3-Tier Role Selector */
+    .role-tabs-container {
+      display: flex;
+      background: rgba(0, 0, 0, 0.45);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 14px;
+      padding: 4px;
+      margin-bottom: 16px;
+      gap: 4px;
+    }
+
+    .role-tab-btn {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 9px 4px;
+      background: transparent;
+      border: none;
+      border-radius: 10px;
+      color: rgba(255, 255, 255, 0.7);
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+      font-family: inherit;
+    }
+
+    .role-tab-btn:hover {
+      color: #FFFFFF;
+      background: rgba(255, 255, 255, 0.08);
+    }
+
+    .role-tab-btn.active {
+      background: linear-gradient(135deg, #DC2626 0%, #B91C1C 100%);
+      color: #FFFFFF;
+      box-shadow: 0 4px 12px rgba(220, 38, 38, 0.4);
+    }
+
+    /* Role Information Banner */
+    .role-info-badge {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 9px 12px;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px dashed rgba(255, 255, 255, 0.15);
+      border-radius: 10px;
+      font-size: 11px;
+      color: #E5E7EB;
+      margin-bottom: 14px;
+      transition: all 0.2s ease;
+    }
+
+    .role-info-badge .badge-icon {
+      font-size: 15px;
+      flex-shrink: 0;
+    }
+
+    /* Staff Member Selector (shown when Kitchen role active) */
+    .staff-selector-wrap {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 14px;
+      padding: 12px;
+      margin-bottom: 14px;
+      animation: fadeIn 0.25s ease;
+    }
+
+    .staff-selector-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+      font-size: 11px;
+      font-weight: 600;
+      color: #F87171;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .staff-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 6px;
+    }
+
+    .staff-pill {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 10px;
+      padding: 7px 8px;
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      cursor: pointer;
+      text-align: left;
+      transition: all 0.2s ease;
+      font-family: inherit;
+      color: #E5E7EB;
+    }
+
+    .staff-pill:hover {
+      border-color: #FF7A00;
+      background: rgba(255, 122, 0, 0.15);
+      transform: translateY(-1px);
+    }
+
+    .staff-pill.active {
+      background: rgba(225, 29, 72, 0.25);
+      border-color: #E11D48;
+      box-shadow: 0 0 10px rgba(225, 29, 72, 0.35);
+      color: #FFFFFF;
+    }
+
+    .staff-pill-avatar {
+      font-size: 16px;
+      line-height: 1;
+      flex-shrink: 0;
+    }
+
+    .staff-pill-info {
+      overflow: hidden;
+    }
+
+    .staff-pill-name {
+      display: block;
+      font-size: 11px;
+      font-weight: 700;
+      color: #FFFFFF;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .staff-pill-spec {
+      display: block;
+      font-size: 9px;
+      color: #9CA3AF;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .staff-lead-btn {
+      grid-column: span 2;
+      justify-content: center;
+      text-align: center;
+    }
+
+    /* Direct quick chips section */
+    .quick-access-wrap {
+      margin-top: 14px;
+      padding-top: 12px;
+      border-top: 1px dashed rgba(255, 255, 255, 0.12);
+      text-align: center;
+    }
+
+    .quick-access-title {
+      font-size: 10px;
+      color: rgba(255, 255, 255, 0.55);
+      font-weight: 600;
+      margin-bottom: 8px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .quick-chips-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 5px;
+      justify-content: center;
+    }
+
+    .quick-chip {
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      color: #E5E7EB;
+      font-size: 11px;
+      font-weight: 500;
+      padding: 5px 9px;
+      border-radius: 16px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      font-family: inherit;
+    }
+
+    .quick-chip:hover {
+      background: rgba(220, 38, 38, 0.22);
+      border-color: #DC2626;
+      color: #FFFFFF;
+      transform: translateY(-1px);
     }
 
     /* Input Fields */
@@ -332,7 +530,7 @@
       display: flex;
       align-items: center;
       text-align: center;
-      margin: 18px 0;
+      margin: 16px 0;
       color: #6B7280;
       font-size: 11px;
       font-weight: 700;
@@ -382,7 +580,7 @@
     /* Card Footer Tags */
     .card-footer-tags {
       text-align: center;
-      margin-top: 16px;
+      margin-top: 14px;
       font-size: 11px;
       color: #9CA3AF;
       letter-spacing: 0.4px;
@@ -487,6 +685,70 @@
 
     <!-- Login Card -->
     <div class="login-card">
+      <!-- 3-Tier Role Selector Tabs -->
+      <div class="role-tabs-container">
+        <button type="button" class="role-tab-btn active" id="tab-customer" onclick="selectRole('customer')">
+          <span>🍕</span> Customer
+        </button>
+        <button type="button" class="role-tab-btn" id="tab-kitchen" onclick="selectRole('kitchen')">
+          <span>👨‍🍳</span> Kitchen
+        </button>
+        <button type="button" class="role-tab-btn" id="tab-admin" onclick="selectRole('admin')">
+          <span>👑</span> Admin
+        </button>
+      </div>
+
+      <!-- Role Context Info Badge -->
+      <div class="role-info-badge" id="role-info-badge">
+        <span class="badge-icon" id="role-info-icon">🍕</span>
+        <span id="role-info-text">Customer Ordering & Menu Access</span>
+      </div>
+
+      <!-- Kitchen Staff Selection Grid (shown only when Kitchen tab is active) -->
+      <div id="kitchen-staff-selector" class="staff-selector-wrap" style="display: none;">
+        <div class="staff-selector-header">
+          <span>Kitchen Station Allocation:</span>
+          <span style="font-size: 9px; color: #9CA3AF; text-transform: none;">Auto-assigned by skills</span>
+        </div>
+        <div class="staff-grid">
+          <button type="button" class="staff-pill active" id="staff-emp1" onclick="selectKitchenStaff('emp1', 'emp123', 'Chef Marco', 'Pizza & Pasta Master')">
+            <span class="staff-pill-avatar">👨‍🍳</span>
+            <div class="staff-pill-info">
+              <span class="staff-pill-name">Chef Marco</span>
+              <span class="staff-pill-spec">Pizza & Pasta</span>
+            </div>
+          </button>
+          <button type="button" class="staff-pill" id="staff-emp2" onclick="selectKitchenStaff('emp2', 'emp123', 'Chef Priya', 'Burger & Grill Specialist')">
+            <span class="staff-pill-avatar">👩‍🍳</span>
+            <div class="staff-pill-info">
+              <span class="staff-pill-name">Chef Priya</span>
+              <span class="staff-pill-spec">Burger & Grill</span>
+            </div>
+          </button>
+          <button type="button" class="staff-pill" id="staff-emp3" onclick="selectKitchenStaff('emp3', 'emp123', 'Chef Vikram', 'Breads & Wraps Chef')">
+            <span class="staff-pill-avatar">👨‍🍳</span>
+            <div class="staff-pill-info">
+              <span class="staff-pill-name">Chef Vikram</span>
+              <span class="staff-pill-spec">Breads & Wraps</span>
+            </div>
+          </button>
+          <button type="button" class="staff-pill" id="staff-emp4" onclick="selectKitchenStaff('emp4', 'emp123', 'Deepak', 'Beverages & Fast Packing')">
+            <span class="staff-pill-avatar">🧑‍🍳</span>
+            <div class="staff-pill-info">
+              <span class="staff-pill-name">Deepak</span>
+              <span class="staff-pill-spec">Beverages & Pack</span>
+            </div>
+          </button>
+          <button type="button" class="staff-pill staff-lead-btn" id="staff-kitchen" onclick="selectKitchenStaff('kitchen', 'kitchen123', 'Kitchen Lead', 'All-Station Dispatch')">
+            <span class="staff-pill-avatar">⭐</span>
+            <div class="staff-pill-info">
+              <span class="staff-pill-name">Kitchen Station Lead</span>
+              <span class="staff-pill-spec">Head Chef & Master Dispatch</span>
+            </div>
+          </button>
+        </div>
+      </div>
+
       <form id="login-form" onsubmit="handleLoginSubmit(event)" novalidate>
         <!-- Error Alert -->
         <div class="alert-banner" id="error-alert">
@@ -496,7 +758,7 @@
 
         <!-- Input 1: Email Address / Scholar ID -->
         <div class="input-wrapper">
-          <svg class="input-icon" viewBox="0 0 24 24">
+          <svg class="input-icon" viewBox="0 0 24 24" id="input-id-icon">
             <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
             <polyline points="22,6 12,13 2,6"/>
           </svg>
@@ -532,7 +794,7 @@
         </div>
 
         <!-- Options Row -->
-        <div class="options-row">
+        <div class="options-row" id="customer-options-row">
           <label class="remember-me">
             <input type="checkbox" id="remember-me-check">
             <span class="custom-checkbox"></span>
@@ -543,29 +805,41 @@
 
         <!-- Primary Login Button -->
         <button type="submit" class="login-btn-primary" id="login-submit-btn">
-          <span id="login-btn-text">Login</span>
+          <span id="login-btn-text">Login to Order</span>
           <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
             <path d="M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z"/>
           </svg>
         </button>
       </form>
 
-      <!-- OR Divider -->
-      <div class="or-divider">
-        <span>OR</span>
+      <!-- Customer Registration Section -->
+      <div id="signup-section">
+        <div class="or-divider">
+          <span>OR</span>
+        </div>
+        <button type="button" class="create-account-btn" onclick="openSignupModal()">
+          <svg viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+          <span>Create New Account</span>
+        </button>
       </div>
 
-      <!-- Create New Account Button -->
-      <button type="button" class="create-account-btn" onclick="openSignupModal()">
-        <svg viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
-        <span>Create New Account</span>
-      </button>
+      <!-- Quick 1-Tap Portal Access Switcher -->
+      <div class="quick-access-wrap">
+        <div class="quick-access-title">Direct Portal Access</div>
+        <div class="quick-chips-row">
+          <button type="button" class="quick-chip" onclick="quickLogin('customer')">🍕 Customer</button>
+          <button type="button" class="quick-chip" onclick="quickLogin('emp1', 'emp123')">👨‍🍳 Chef Marco</button>
+          <button type="button" class="quick-chip" onclick="quickLogin('emp2', 'emp123')">👩‍🍳 Chef Priya</button>
+          <button type="button" class="quick-chip" onclick="quickLogin('emp3', 'emp123')">👨‍🍳 Chef Vikram</button>
+          <button type="button" class="quick-chip" onclick="quickLogin('emp4', 'emp123')">🧑‍🍳 Deepak</button>
+          <button type="button" class="quick-chip" onclick="quickLogin('admin', 'admin')">👑 Admin</button>
+        </div>
+      </div>
 
       <!-- Footer Tags -->
       <div class="card-footer-tags">
         Pizza &nbsp;•&nbsp; Pasta &nbsp;•&nbsp; Burgers &nbsp;•&nbsp; More
       </div>
-    </div>
   </div>
 
   <!-- Create New Account Modal -->
@@ -623,6 +897,100 @@
       return str.trim().replace(/[<>]/g, '');
     }
 
+    // Role state
+    let currentRole = 'customer';
+    let currentStaff = { id: 'emp1', pwd: 'emp123', name: 'Chef Marco', spec: 'Pizza & Pasta Master' };
+
+    function selectRole(role) {
+      currentRole = role;
+      document.getElementById('tab-customer').classList.toggle('active', role === 'customer');
+      document.getElementById('tab-kitchen').classList.toggle('active', role === 'kitchen');
+      document.getElementById('tab-admin').classList.toggle('active', role === 'admin');
+
+      const kitchenSelector = document.getElementById('kitchen-staff-selector');
+      const signupSection = document.getElementById('signup-section');
+      const customerOptionsRow = document.getElementById('customer-options-row');
+      const idInput = document.getElementById('login-id');
+      const pwdInput = document.getElementById('login-pwd');
+      const btnText = document.getElementById('login-btn-text');
+      const badgeIcon = document.getElementById('role-info-icon');
+      const badgeText = document.getElementById('role-info-text');
+      const alertBox = document.getElementById('error-alert');
+      alertBox.classList.remove('show');
+
+      if (role === 'customer') {
+        kitchenSelector.style.display = 'none';
+        signupSection.style.display = 'block';
+        customerOptionsRow.style.display = 'flex';
+        badgeIcon.innerText = '🍕';
+        badgeText.innerText = 'Customer Ordering & Menu Access';
+        idInput.placeholder = 'Email Address or Username';
+        idInput.value = localStorage.getItem('pm_remembered_id') || '';
+        pwdInput.placeholder = 'Password';
+        pwdInput.value = '';
+        btnText.innerText = 'Login to Order';
+      } else if (role === 'kitchen') {
+        kitchenSelector.style.display = 'block';
+        signupSection.style.display = 'none';
+        customerOptionsRow.style.display = 'none';
+        badgeIcon.innerText = '👨‍🍳';
+        badgeText.innerText = `${currentStaff.name} - ${currentStaff.spec}`;
+        idInput.placeholder = 'Kitchen Employee ID';
+        idInput.value = currentStaff.id;
+        pwdInput.placeholder = 'Staff Password';
+        pwdInput.value = currentStaff.pwd;
+        btnText.innerText = `Enter Kitchen Station (${currentStaff.id.toUpperCase()})`;
+      } else if (role === 'admin') {
+        kitchenSelector.style.display = 'none';
+        signupSection.style.display = 'none';
+        customerOptionsRow.style.display = 'none';
+        badgeIcon.innerText = '👑';
+        badgeText.innerText = 'Store Administrator & Master Control';
+        idInput.placeholder = 'Admin Username';
+        idInput.value = 'admin';
+        pwdInput.placeholder = 'Admin Password';
+        pwdInput.value = 'admin';
+        btnText.innerText = 'Enter Admin Dashboard';
+      }
+    }
+
+    function selectKitchenStaff(empId, pwd, name, spec) {
+      currentStaff = { id: empId, pwd, name, spec };
+      document.querySelectorAll('.staff-pill').forEach(pill => pill.classList.remove('active'));
+      const activePill = document.getElementById(`staff-${empId}`);
+      if (activePill) activePill.classList.add('active');
+
+      document.getElementById('login-id').value = empId;
+      document.getElementById('login-pwd').value = pwd;
+      document.getElementById('role-info-icon').innerText = '👨‍🍳';
+      document.getElementById('role-info-text').innerText = `${name} - ${spec}`;
+      document.getElementById('login-btn-text').innerText = `Enter Kitchen Station (${empId.toUpperCase()})`;
+    }
+
+    function quickLogin(roleOrEmp, pwd) {
+      if (roleOrEmp === 'customer') {
+        selectRole('customer');
+        document.getElementById('login-id').focus();
+      } else if (roleOrEmp === 'admin') {
+        selectRole('admin');
+        document.getElementById('login-id').value = 'admin';
+        document.getElementById('login-pwd').value = pwd || 'admin';
+        document.getElementById('login-form').dispatchEvent(new Event('submit'));
+      } else {
+        selectRole('kitchen');
+        const staffMeta = {
+          emp1: ['Chef Marco', 'Pizza & Pasta Master'],
+          emp2: ['Chef Priya', 'Burger & Grill Specialist'],
+          emp3: ['Chef Vikram', 'Breads & Wraps Chef'],
+          emp4: ['Deepak', 'Beverages & Fast Packing'],
+          kitchen: ['Kitchen Lead', 'All-Station Dispatch']
+        };
+        const meta = staffMeta[roleOrEmp] || ['Kitchen Staff', 'Kitchen Station'];
+        selectKitchenStaff(roleOrEmp, pwd || 'emp123', meta[0], meta[1]);
+        document.getElementById('login-form').dispatchEvent(new Event('submit'));
+      }
+    }
+
     // Toggle password masking
     function togglePasswordVisibility(fieldId, btn) {
       const field = document.getElementById(fieldId);
@@ -636,7 +1004,7 @@
       }
     }
 
-    // Load Remembered ID if available
+    // Initialize Role & Load Remembered ID
     document.addEventListener('DOMContentLoaded', () => {
       const savedId = localStorage.getItem('pm_remembered_id');
       const idInput = document.getElementById('login-id');
@@ -645,6 +1013,16 @@
       if (savedId && idInput) {
         idInput.value = savedId;
         if (rememberCheck) rememberCheck.checked = true;
+      }
+
+      const urlParams = new URLSearchParams(window.location.search);
+      const requestedRole = urlParams.get('role');
+      if (requestedRole === 'kitchen') {
+        selectRole('kitchen');
+      } else if (requestedRole === 'admin') {
+        selectRole('admin');
+      } else {
+        selectRole('customer');
       }
     });
 
@@ -666,7 +1044,7 @@
 
       // Validation
       if (!id) {
-        alertText.innerText = 'Please enter your Email or Scholar ID';
+        alertText.innerText = currentRole === 'kitchen' ? 'Please select or enter an Employee ID' : (currentRole === 'admin' ? 'Please enter Admin ID' : 'Please enter your Email or Username');
         alertBox.classList.add('show');
         idInput.focus();
         return;
